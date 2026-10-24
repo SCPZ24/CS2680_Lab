@@ -43,6 +43,13 @@ class Tool:
 class _WorkspaceTool(Tool):
     """Base for tools that must operate inside one repository checkout."""
 
+    MAX_OUTPUT_CHARS = 12_000
+
+    def _truncate_output(self, output: str, notice: str) -> str:
+        if len(output) <= self.MAX_OUTPUT_CHARS:
+            return output
+        return output[: self.MAX_OUTPUT_CHARS - len(notice)] + notice
+
     def __init__(self, pwd: str):
         self.pwd = Path(pwd).expanduser().resolve()
         if not self.pwd.is_dir():
@@ -64,12 +71,20 @@ class _WorkspaceTool(Tool):
 class Bash(_WorkspaceTool):
     """Run a shell command with the repository as its working directory."""
 
+    TRUNCATION_NOTICE = (
+        "\n[Output truncated. Rerun with filters or redirect output to a file "
+        "and inspect specific line ranges.]"
+    )
+
     def __init__(self, pwd: str):
         _WorkspaceTool.__init__(self, pwd)
         Tool.__init__(
             self,
             name="bash",
-            description="Run a shell command in the repository.",
+            description=(
+                "Run a shell command in the repository. Output is limited to "
+                "12000 characters; filter large outputs or redirect them to a file."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
@@ -97,26 +112,41 @@ class Bash(_WorkspaceTool):
                 timeout=120,
             )
         except subprocess.TimeoutExpired as exc:
-            output = (exc.stdout or "") + (exc.stderr or "")
-            return f"Command timed out after 120 seconds.\n{output}".rstrip()
+            # TimeoutExpired may contain bytes even when text=True.
+            output = "".join(
+                part.decode("utf-8", errors="replace") if isinstance(part, bytes) else part or ""
+                for part in (exc.stdout, exc.stderr)
+            )
+            return self._truncate_output(
+                f"Command timed out after 120 seconds.\n{output}".rstrip(),
+                self.TRUNCATION_NOTICE,
+            )
 
         lines = [f"exit code: {completed.returncode}"]
         if completed.stdout:
             lines.append(f"stdout:\n{completed.stdout.rstrip()}")
         if completed.stderr:
             lines.append(f"stderr:\n{completed.stderr.rstrip()}")
-        return "\n".join(lines)
+        return self._truncate_output("\n".join(lines), self.TRUNCATION_NOTICE)
 
 
 class ReadFile(_WorkspaceTool):
     """Read a UTF-8 file within the current working directory."""
+
+    TRUNCATION_NOTICE = (
+        "\n[Output truncated. Use bash with sed to read a specific line range.]"
+    )
 
     def __init__(self, pwd: str):
         _WorkspaceTool.__init__(self, pwd)
         Tool.__init__(
             self,
             name="read_file",
-            description="Read a file from the repository with line numbers.",
+            description=(
+                "Read a file from the repository with line numbers. "
+                "Output is limited to 12000 characters; use bash with sed "
+                "to read specific line ranges in larger files."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
@@ -132,11 +162,16 @@ class ReadFile(_WorkspaceTool):
 
     def use(self, path: str) -> str:
         file_path = self._path(path)
-        contents = file_path.read_text(encoding="utf-8")
-        return "\n".join(
+        with file_path.open(encoding="utf-8") as source:
+            contents = source.read(self.MAX_OUTPUT_CHARS + 1)
+        output = "\n".join(
             f"{line_number:>4}: {line}"
             for line_number, line in enumerate(contents.splitlines(), start=1)
         )
+        if len(contents) > self.MAX_OUTPUT_CHARS or len(output) > self.MAX_OUTPUT_CHARS:
+            keep = self.MAX_OUTPUT_CHARS - len(self.TRUNCATION_NOTICE)
+            return output[:keep] + self.TRUNCATION_NOTICE
+        return output
 
 
 class EditFile(_WorkspaceTool):
@@ -249,18 +284,28 @@ class Done(Tool):
 class Grep(_WorkspaceTool):
     """Search for a regex pattern in files within the current working directory."""
 
+    TRUNCATION_NOTICE = (
+        "\n[Output truncated; search stopped early. Use a more specific pattern "
+        "or a narrower path.]"
+    )
+
     def __init__(self, pwd: str):
         _WorkspaceTool.__init__(self, pwd)
         Tool.__init__(
             self,
             name="grep",
-            description="Search files recursively for a regular expression.",
+            description=(
+                "Search files recursively for a regular expression of at least "
+                "3 characters. Output is limited to 12000 characters; narrow "
+                "the pattern or path when results are truncated."
+            ),
             parameters={
                 "type": "object",
                 "properties": {
                     "pattern": {
                         "type": "string",
-                        "description": "Regular expression to search for.",
+                        "description": "Regular expression to search for (at least 3 characters).",
+                        "minLength": 3,
                     },
                     "path": {
                         "type": "string",
@@ -275,6 +320,11 @@ class Grep(_WorkspaceTool):
     def use(self, pattern: str, path: str) -> str:
         if not isinstance(pattern, str) or not pattern:
             raise ValueError("pattern must be a non-empty string")
+        if len(pattern) < 3:
+            raise ValueError(
+                "pattern must contain at least 3 characters; shorter patterns "
+                "can match too many results. Use a more specific expression."
+            )
 
         try:
             regex = re.compile(pattern)
@@ -299,6 +349,7 @@ class Grep(_WorkspaceTool):
             raise FileNotFoundError(path)
 
         matches = []
+        output_length = 0
         for file_path in files:
             try:
                 raw = file_path.read_bytes()
@@ -311,7 +362,14 @@ class Grep(_WorkspaceTool):
             relative_path = file_path.relative_to(self.pwd)
             for line_number, line in enumerate(text.splitlines(), start=1):
                 if regex.search(line):
-                    matches.append(f"{relative_path}:{line_number}:{line}")
+                    match = f"{relative_path}:{line_number}:{line}"
+                    output_length += len(match) + bool(matches)
+                    # Keep only enough of an oversized line to detect truncation.
+                    matches.append(match[: self.MAX_OUTPUT_CHARS + 1])
+                    if output_length > self.MAX_OUTPUT_CHARS:
+                        return self._truncate_output(
+                            "\n".join(matches), self.TRUNCATION_NOTICE
+                        )
 
         return "\n".join(matches) if matches else "No matches found."
 
