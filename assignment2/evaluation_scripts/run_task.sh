@@ -73,11 +73,21 @@ fi
 LOG_DIR="$REPO_ROOT/madsLoop_logs/$INSTANCE_ID"
 mkdir -p "$LOG_DIR"
 echo "== agent logs (written live): $LOG_DIR" >&2
+# Named volumes survive --rm. Key them by image content so incompatible
+# task environments never share an installed interpreter or its packages.
+IMAGE_ID=$(docker image inspect --format '{{.Id}}' "$IMAGE")
+CACHE_KEY="${IMAGE_ID#sha256:}"
+echo "== harness Python cache: madsloop-python-$CACHE_KEY" >&2
 
 docker run --rm $PLATFORM_FLAG \
   --entrypoint bash \
   -v "$REPO_ROOT:/madsLoop" \
   -v "$LOG_DIR:/tmp/madsLoop_logs" \
+  -v "madsloop-python-$CACHE_KEY:/tmp/uv-pythons" \
+  -v "madsloop-pip-$CACHE_KEY:/root/.cache/pip" \
+  -e UV_PYTHON_INSTALL_DIR=/tmp/uv-pythons \
+  -e PIP_CACHE_DIR=/root/.cache/pip \
+  -e PIP_DISABLE_PIP_VERSION_CHECK=1 \
   -e OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}" \
   -e PROBLEM_FILE="/madsLoop/.problem_$IDX.txt" \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
@@ -124,7 +134,8 @@ docker run --rm $PLATFORM_FLAG \
       # agent`s bash tool still uses the image`s default python, so repo and
       # test commands run in the task`s real environment.
       AGENT_PY=""
-      for c in python3.13 python3.12 python3.11 python3.10 \
+      for c in /tmp/uv-pythons/cpython-3.12*/bin/python3.12 \
+               python3.13 python3.12 python3.11 python3.10 \
                /usr/local/bin/python3.13 /usr/local/bin/python3.12 \
                /usr/local/bin/python3.11 /usr/local/bin/python3.10 \
                /opt/miniconda3/bin/python /opt/conda/bin/python \
@@ -134,6 +145,9 @@ docker run --rm $PLATFORM_FLAG \
           AGENT_PY="$(command -v "$c")"; break
         fi
       done
+      case "$AGENT_PY" in
+        /tmp/uv-pythons/*) echo "== reusing cached harness Python and installed packages" >&2 ;;
+      esac
       if [ -z "$AGENT_PY" ]; then
         echo "== no Python >=3.10 in image; bootstrapping one with uv" >&2
         python3 -m pip install -q uv || pip install -q uv
@@ -144,18 +158,11 @@ docker run --rm $PLATFORM_FLAG \
             [ -x "$u" ] && UV_BIN="$u" && break
           done
         fi
-        export UV_PYTHON_INSTALL_DIR=/tmp/uv-pythons
         "$UV_BIN" python install 3.12 >&2
         AGENT_PY="$("$UV_BIN" python find 3.12)"
       fi
       echo "== harness interpreter: $AGENT_PY ($("$AGENT_PY" -V 2>&1))" >&2
-      # --- your environment setup, then the agent (same invocation grading uses) ---
-      # Non-fatal: in non-Python images the default pip may be absent/broken;
-      # ensure_openai below covers the harness interpreter regardless.
-      bash /madsLoop/docker_env.sh || \
-        echo "== WARNING: docker_env.sh failed; continuing (harness deps are ensured separately)" >&2
-      # docker_env.sh installs into the image default python; make sure the
-      # harness interpreter has the openai package too. Ladder: existing pip
+      # Ensure dependencies in the harness interpreter. Ladder: existing pip
       # -> ensurepip -> get-pip.py -> install with image pip into a dir on
       # PYTHONPATH (openai and its deps ship py3/abi3 wheels, so packages
       # installed by an older pip import fine on the newer interpreter).
@@ -177,6 +184,10 @@ docker run --rm $PLATFORM_FLAG \
         "$AGENT_PY" -c "import openai"
       }
       ensure_openai
+      # Setup targets the same interpreter; keep the task shell PATH unchanged.
+      # Run on every launch so edits to docker_env.sh are still applied.
+      export AGENT_PY
+      bash /madsLoop/docker_env.sh
       cd /tmp
       echo "== starting agent (progress on stderr; JSONL logs saved live)" >&2
       "$AGENT_PY" /madsLoop/madsLoop.py -p "$(cat "$PROBLEM_FILE")" --log "$WD"

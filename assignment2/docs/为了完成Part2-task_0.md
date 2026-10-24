@@ -46,25 +46,29 @@ read_file(path, start_line=1, end_line=None)
 ```
 
 
-## 2026-10-24：从硅基流动切换到 OpenRouter
+## 硅基流动几乎要退避一分钟才能进入下一个iteration
 
-### 观察与决定
+### 观察
 
-用户报告新一轮运行中，每个 iteration 都需要退避到第 6/7 次尝试，已在本机环境配置 OpenRouter API key，要求统一切换服务商。此处记录的是用户观察，尚未以最终日志统计量化频率；切换也不代表能够保证消除限流。
+用户报告新一轮运行中，每个 iteration 都需要退避到第 6/7 次尝试。
 
-### 实际改动
+### 改动
 
-- `src/integrations.py` 默认值与 `madsLoop.py` 入口统一使用 `https://openrouter.ai/api/v1`。
-- 模型仍为 Qwen3.6-35B-A3B，改用 OpenRouter 的模型 ID `qwen/qwen3.6-35b-a3b`。
-- 从 `OPENROUTER_API_KEY` 读取密钥；`run_task.sh` 与 `run_all.sh` 检查该变量，任务脚本将其传入 Docker。没有回退到其他服务商密钥。
-- 保留非流式请求和关闭思考模式的基线意图；将硅基流动的 `enable_thinking` 请求字段替换为 OpenRouter 的 `reasoning.enabled=false`。实际供应商是否按预期执行，仍需真实调用观察。
-- 同步本地运行 README、smoke test 和 CLI 离线测试的配置。历史日志、课程原始说明和本文此前的排查记录保留原样。
-- 保持 1、2、4、8、16、32 秒退避、Retry-After 处理、工具、系统提示词和任务输入方式不变。
+已在本机环境配置 OpenRouter API key，统一切换服务商。
 
-官方依据：[API 接入](https://openrouter.ai/developers)、[模型 ID](https://openrouter.ai/qwen/qwen3.6-35b-a3b/api)、[reasoning 参数](https://openrouter.ai/docs/guides/best-practices/reasoning-tokens)。
 
-### 验证与后续
+## 2026-10-24：缓存容器中的 harness Python 和依赖
 
-读取本机 shell 环境确认存在 `OPENROUTER_API_KEY`，未输出密钥值。14 项离线测试通过；新增 HTTP MockTransport 测试验证实际请求 URL、Bearer 认证、模型 ID、stream=false 和 reasoning.enabled=false，并确认缺少 OpenRouter key 时不会误用其他服务商密钥。两个运行脚本通过 bash 语法检查。
+### 观察
 
-本轮没有发起真实付费模型请求或重跑容器评测。已启动的 agent 进程不会自动切换服务商，需要在下一次启动时加载新配置。比较实验时应单独标记服务商变化，不能把吞吐或解题表现的差异完全归因于 harness 逻辑。
+每次运行都会出现 uv 安装和 CPython 3.12 下载。原因是任务镜像缺少 Python 3.10+，而脚本把新解释器装在容器临时目录 `/tmp/uv-pythons`；`docker run --rm` 删除容器时，安装结果一并丢失。
+
+### 改动
+
+复用容器的环境和依赖，每次重新用容器运行仅初始化repo现场。
+- `run_task.sh` 将 Docker 命名卷挂载到 `/tmp/uv-pythons`，持久保存 uv 安装的解释器及其 site-packages。启动时先探测缓存中可运行的 Python 3.12，再探测镜像内置解释器，最后才用 uv 安装。
+- 另一个命名卷挂载到 `/root/.cache/pip`，复用依赖下载结果。
+- 两类 volume 名称分别为 `madsloop-python-<image-id>`、`madsloop-pip-<image-id>`，按镜像内容 ID 隔离，避免不同镜像共享不兼容的安装环境。镜像内容改变时自动使用新缓存。
+- `docker_env.sh` 改为使用 `${AGENT_PY:-python3}`。脚本先确保选定解释器拥有 openai，再运行 docker_env.sh；不再额外把 openai 装进任务镜像的默认 Python。每次仍执行 setup，以便依赖变更生效；setup 失败会停止启动。
+- 不改变任务 shell 的 PATH，避免用 harness Python 替换项目的测试解释器；目标仓库仍来自每次新建的容器，不缓存 agent 对项目的修改。
+- 关闭 pip 的版本升级检查，减少重复提示。

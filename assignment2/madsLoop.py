@@ -30,8 +30,7 @@ if __name__ == "__main__":
         base_url="https://openrouter.ai/api/v1",
         api_key=LLM_API_KEY,
         model_name="qwen/qwen3.6-35b-a3b",
-        # Preserve the non-thinking baseline using OpenRouter's reasoning setting.
-        enable_thinking=False,
+        enable_thinking=True,
     )
     loop_msg_box = LoopMsgBox()
     tool_set = [

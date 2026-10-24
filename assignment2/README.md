@@ -78,3 +78,12 @@ python3 -B -m tests.smoke_test
 从本目录运行课程脚本，或将 `MADSLOOP_REPO` 指向本目录的绝对路径。镜像按需拉取。
 
 个人自学环境使用 OpenRouter：`run_all.sh` / `run_task.sh` 已改为检查并转发 `OPENROUTER_API_KEY`，入口和 LLM client 默认使用 `https://openrouter.ai/api/v1` 与模型 `qwen/qwen3.6-35b-a3b`。运行前在宿主机导出该密钥，脚本会将其传入任务容器。OpenRouter 接线已完成；切换后的真实模型调用和容器评测待验证。
+
+
+### 启动缓存
+
+`run_task.sh` 使用按 Docker 镜像内容 ID 隔离的命名 volume：`madsloop-python-<image-id>` 保存 uv 安装的 Python 及安装在其中的 harness 依赖，`madsloop-pip-<image-id>` 保存 pip 下载缓存。容器被 `--rm` 删除后，这些 volume 仍然保留。同一镜像再次运行时优先使用缓存的 Python，输出 `reusing cached harness Python and installed packages`。
+
+`docker_env.sh` 使用脚本选定的 `AGENT_PY` 安装依赖，每次仍执行，以便新增依赖生效。不会改变任务命令的 PATH，项目测试仍使用镜像原来的 Python。原镜像自带 Python 3.10+ 时直接使用它，其内置解释器的 site-packages 不属于上述 Python volume；这类镜像主要复用 pip 下载缓存。
+
+第一次使用某个镜像仍需建立缓存；镜像内容更新后自动使用新的缓存。缓存位于 Docker 中，可通过 `docker volume ls --filter name=madsloop-` 查看；确认没有相关容器使用后，可用 `docker volume rm <具体卷名>` 删除指定缓存，下一次启动会重建。任务仓库 `/app`、`/testbed` 不放入缓存。
