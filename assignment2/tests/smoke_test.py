@@ -1,6 +1,6 @@
 """From assignment2/: python3 -B -m tests.smoke_test.
 
-Requires SILICONFLOW_API_KEY. Uses the actual CLI entry point and a temporary
+Requires OPENROUTER_API_KEY. Uses the actual CLI entry point and a temporary
 repository; diagnostics are separate from the assignment's agent-log schema.
 """
 
@@ -18,8 +18,8 @@ from src.runtime import AgentRuntime
 
 
 def main():
-    if not os.environ.get("SILICONFLOW_API_KEY"):
-        raise SystemExit("Set SILICONFLOW_API_KEY before running this live check.")
+    if not os.environ.get("OPENROUTER_API_KEY"):
+        raise SystemExit("Set OPENROUTER_API_KEY before running this live check.")
 
     destination = Path(tempfile.mkdtemp(prefix="madsloop-smoke-"))
     workspace = destination / "repo"

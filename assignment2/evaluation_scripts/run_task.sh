@@ -12,7 +12,7 @@
 # Run from your agent repo root (the directory containing madsLoop.py), or
 # set MADSLOOP_REPO to point at it:
 #
-#   export SILICONFLOW_API_KEY=sk-...
+#   export OPENROUTER_API_KEY=sk-...
 #   bash evaluation_scripts/run_task.sh <task_index>
 #
 # agent_task_input.json is read from the evaluation_scripts folder itself,
@@ -39,8 +39,8 @@ if [[ ! -f "$TASKS_JSON" ]]; then
   exit 1
 fi
 
-if [[ -z "${SILICONFLOW_API_KEY:-}" ]]; then
-  echo "error: SILICONFLOW_API_KEY is not set — export your SiliconFlow key before running" >&2
+if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+  echo "error: OPENROUTER_API_KEY is not set — export your OpenRouter key before running" >&2
   exit 1
 fi
 
@@ -78,7 +78,7 @@ docker run --rm $PLATFORM_FLAG \
   --entrypoint bash \
   -v "$REPO_ROOT:/madsLoop" \
   -v "$LOG_DIR:/tmp/madsLoop_logs" \
-  -e SILICONFLOW_API_KEY="${SILICONFLOW_API_KEY:-}" \
+  -e OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}" \
   -e PROBLEM_FILE="/madsLoop/.problem_$IDX.txt" \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   "$IMAGE" \

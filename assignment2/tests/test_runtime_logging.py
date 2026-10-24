@@ -160,7 +160,7 @@ class RuntimeLoggingTests(unittest.TestCase):
 
     def test_cli_logs_opt_in_and_legacy_aliases(self):
         entry = Path(__file__).resolve().parents[1] / "madsLoop.py"
-        with chdir(self.root), patch.dict(os.environ, {"SILICONFLOW_API_KEY": "offline"}), patch.object(
+        with chdir(self.root), patch.dict(os.environ, {"OPENROUTER_API_KEY": "offline"}), patch.object(
             integrations.LLMClient, "invoke", return_value=response()
         ):
             for arguments, count in [

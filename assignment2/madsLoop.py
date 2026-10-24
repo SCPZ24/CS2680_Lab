@@ -8,7 +8,7 @@ from src.log_client import RuntimeLogClient, EmptyLogClient
 
 # Personal
 import os
-LLM_API_KEY = os.environ.get("SILICONFLOW_API_KEY")
+LLM_API_KEY = os.environ.get("OPENROUTER_API_KEY")
 
 
 if __name__ == "__main__":
@@ -25,13 +25,12 @@ if __name__ == "__main__":
         parser.error("workdir is required")
 
     if not LLM_API_KEY:
-        parser.error("SILICONFLOW_API_KEY is required")
+        parser.error("OPENROUTER_API_KEY is required")
     llm_client = LLMClient(
-        base_url="https://api.siliconflow.cn/v1",
+        base_url="https://openrouter.ai/api/v1",
         api_key=LLM_API_KEY,
-        model_name="Qwen/Qwen3.6-35B-A3B",
-        # Thinking mode emitted tool-call text without structured tool_calls
-        # during the live smoke test. Use non-thinking mode for this baseline.
+        model_name="qwen/qwen3.6-35b-a3b",
+        # Preserve the non-thinking baseline using OpenRouter's reasoning setting.
         enable_thinking=False,
     )
     loop_msg_box = LoopMsgBox()

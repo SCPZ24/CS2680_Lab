@@ -9,18 +9,18 @@ from openai import OpenAI
 
 
 class LLMClient:
-    """OpenAI-compatible chat client, defaulting to SiliconFlow."""
+    """OpenAI-compatible chat client, defaulting to OpenRouter."""
 
     def __init__(
         self,
-        base_url: str = "https://api.siliconflow.cn/v1",
+        base_url: str = "https://openrouter.ai/api/v1",
         api_key: str | None = None,
-        model_name: str = "Qwen/Qwen3.6-35B-A3B",
+        model_name: str = "qwen/qwen3.6-35b-a3b",
         enable_thinking: bool | None = None,
     ):
-        api_key = api_key or os.environ.get("SILICONFLOW_API_KEY")
+        api_key = api_key or os.environ.get("OPENROUTER_API_KEY")
         if not api_key:
-            raise ValueError("SILICONFLOW_API_KEY is required")
+            raise ValueError("OPENROUTER_API_KEY is required")
 
         self.model_name = model_name
         self.enable_thinking = enable_thinking
@@ -46,5 +46,5 @@ class LLMClient:
         if tools is not None:
             request["tools"] = tools
         if self.enable_thinking is not None:
-            request["extra_body"] = {"enable_thinking": self.enable_thinking}
+            request["extra_body"] = {"reasoning": {"enabled": self.enable_thinking}}
         return self.client.chat.completions.create(**request)

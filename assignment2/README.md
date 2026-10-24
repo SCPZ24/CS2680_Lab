@@ -34,7 +34,7 @@ assignment2/
 
 ## 本地运行
 
-以下命令均从 `assignment2/` 执行。使用 Python 3.10+，安装 `openai`，并在当前 shell 设置 `SILICONFLOW_API_KEY`。
+以下命令均从 `assignment2/` 执行。使用 Python 3.10+，安装 `openai`，并在当前 shell 设置 `OPENROUTER_API_KEY`。
 
 ```bash
 python3 -m pip install 'openai>=1.0'
@@ -77,4 +77,4 @@ python3 -B -m tests.smoke_test
 
 从本目录运行课程脚本，或将 `MADSLOOP_REPO` 指向本目录的绝对路径。镜像按需拉取。
 
-个人自学环境使用硅基流动：`run_all.sh` / `run_task.sh` 已改为检查并转发 `SILICONFLOW_API_KEY`，入口和 LLM client 默认使用 `https://api.siliconflow.cn/v1` 与模型 `Qwen/Qwen3.6-35B-A3B`。运行前在宿主机导出该密钥，脚本会将其传入任务容器。容器评测尚未实际验证。
+个人自学环境使用 OpenRouter：`run_all.sh` / `run_task.sh` 已改为检查并转发 `OPENROUTER_API_KEY`，入口和 LLM client 默认使用 `https://openrouter.ai/api/v1` 与模型 `qwen/qwen3.6-35b-a3b`。运行前在宿主机导出该密钥，脚本会将其传入任务容器。OpenRouter 接线已完成；切换后的真实模型调用和容器评测待验证。
