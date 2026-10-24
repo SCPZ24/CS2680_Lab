@@ -1,7 +1,11 @@
 from __future__ import annotations
 
 from enum import Enum
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 import json
+import math
+import sys
 import time
 from typing import Any, TYPE_CHECKING
 
@@ -13,6 +17,12 @@ from .log_client import LogClient
 
 if TYPE_CHECKING:
     from .tools import Tool
+
+
+def progress(message: str) -> None:
+    # stdout is reserved for the patch by run_task.sh.
+    print(f"[{datetime.now().astimezone().isoformat(timespec='seconds')}] {message}",
+          file=sys.stderr, flush=True)
 
 
 class MSG(Enum):
@@ -63,6 +73,7 @@ class AgentRuntime:
             event="run_start", model_id=self.llm_client.model_name, workdir=self.pwd
         )
         reason = "error"
+        progress(f"Run started: model={self.llm_client.model_name}, workdir={self.pwd}")
         try:
             while True:
                 self.iteration += 1
@@ -83,11 +94,16 @@ class AgentRuntime:
             self.log_client.write_log(
                 event="run_end", reason=reason, num_iterations=self.iteration
             )
+            progress(f"Run ended: reason={reason}, iterations={self.iteration}")
 
 
     def invoke_llm(self):
         """Invoke the LLM with the current messages and return the response."""
-        for attempt in range(3):
+        # Seven attempts allow all six waits: 1, 2, 4, 8, 16, 32 seconds.
+        max_attempts = 7
+        for attempt in range(max_attempts):
+            progress(f"Iteration {self.iteration}: API attempt {attempt + 1}/{max_attempts}, "
+                     f"messages={len(self.messages)}; waiting for response")
             try:
                 response = self.llm_client.invoke(
                     self.messages,
@@ -96,13 +112,30 @@ class AgentRuntime:
                 break
             except (APIConnectionError, APIStatusError) as exc:
                 retryable = isinstance(exc, APIConnectionError) or exc.status_code in {408, 409, 429} or exc.status_code >= 500
-                if not retryable or attempt == 2:
+                if not retryable or attempt == max_attempts - 1:
+                    progress(f"API failed; stopping: {exc}")
                     raise
                 backoff_s = 2 ** attempt
+                # Retry-After may be seconds or an HTTP date. Never retry
+                # earlier than either our backoff or the server's advice.
+                if isinstance(exc, APIStatusError):
+                    retry_after = exc.response.headers.get("retry-after")
+                    if retry_after:
+                        try:
+                            delay = float(retry_after)
+                        except ValueError:
+                            try:
+                                delay = (parsedate_to_datetime(retry_after) - datetime.now(timezone.utc)).total_seconds()
+                            except (TypeError, ValueError, OverflowError):
+                                delay = 0
+                        if math.isfinite(delay):
+                            backoff_s = max(backoff_s, delay)
                 self.log_client.write_log(
                     event="api_retry", iteration=self.iteration,
                     error=str(exc), backoff_s=backoff_s,
                 )
+                progress(f"API error: {exc}; retrying in {backoff_s:.1f}s "
+                         f"(next attempt {attempt + 2}/{max_attempts})")
                 time.sleep(backoff_s)
 
         usage = response.usage
@@ -113,11 +146,16 @@ class AgentRuntime:
             total_tokens=usage.total_tokens if usage else None,
         )
 
+        progress(f"Iteration {self.iteration}: API response received; "
+                 f"input_tokens={usage.prompt_tokens if usage else 'unknown'}, "
+                 f"output_tokens={usage.completion_tokens if usage else 'unknown'}, "
+                 f"total_tokens={usage.total_tokens if usage else 'unknown'}")
         return response
 
     def _parse_tools(self, tool_calls: list[Any]) -> None:
         """Execute model-requested tools and append their result messages."""
         for tool_call in tool_calls:
+            progress(f"Iteration {self.iteration}: tool {tool_call.function.name} started")
             tool_name = tool_call.function.name
             arguments = tool_call.function.arguments
             try:
@@ -147,6 +185,8 @@ class AgentRuntime:
                 event="tool_result", iteration=self.iteration,
                 tool_name=tool_name, result=result, is_error=is_error,
             )
+            progress(f"Iteration {self.iteration}: tool {tool_name} finished; "
+                     f"is_error={is_error}, result_chars={len(result)}")
             self.messages.append(
                 {
                     "role": "tool",

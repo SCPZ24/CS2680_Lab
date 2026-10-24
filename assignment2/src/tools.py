@@ -130,10 +130,6 @@ class Bash(_WorkspaceTool):
 class ReadFile(_WorkspaceTool):
     """Read a UTF-8 file within the current working directory."""
 
-    TRUNCATION_NOTICE = (
-        "\n[Output truncated. Use bash with sed to read a specific line range.]"
-    )
-
     def __init__(self, pwd: str):
         _WorkspaceTool.__init__(self, pwd)
         Tool.__init__(
@@ -141,8 +137,9 @@ class ReadFile(_WorkspaceTool):
             name="read_file",
             description=(
                 "Read a file from the repository with line numbers. "
-                "Output is limited to 12000 characters; use bash with sed "
-                "to read specific line ranges in larger files."
+                "Use start_line and end_line for an inclusive, 1-based line range. "
+                "Output is limited to 12000 characters; follow the continuation "
+                "hint if truncated."
             ),
             parameters={
                 "type": "object",
@@ -150,25 +147,62 @@ class ReadFile(_WorkspaceTool):
                     "path": {
                         "type": "string",
                         "description": "Path to the file, relative to the repository.",
-                    }
+                    },
+                    "start_line": {
+                        "type": "integer", "minimum": 1, "default": 1,
+                        "description": "First line to read, inclusive (1-based).",
+                    },
+                    "end_line": {
+                        "type": "integer", "minimum": 1,
+                        "description": "Last line to read, inclusive. Omit to read to EOF or the output limit.",
+                    },
                 },
                 "required": ["path"],
                 "additionalProperties": False,
             },
         )
 
-    def use(self, path: str) -> str:
+    def use(self, path: str, start_line: int = 1, end_line: int | None = None) -> str:
+        if type(start_line) is not int or start_line < 1:
+            raise ValueError("start_line must be an integer >= 1")
+        if end_line is not None and (type(end_line) is not int or end_line < start_line):
+            raise ValueError("end_line must be an integer >= start_line")
         file_path = self._path(path)
+        lines: list[str] = []
+        output_size = 0
         with file_path.open(encoding="utf-8") as source:
-            contents = source.read(self.MAX_OUTPUT_CHARS + 1)
-        output = "\n".join(
-            f"{line_number:>4}: {line}"
-            for line_number, line in enumerate(contents.splitlines(), start=1)
-        )
-        if len(contents) > self.MAX_OUTPUT_CHARS or len(output) > self.MAX_OUTPUT_CHARS:
-            keep = self.MAX_OUTPUT_CHARS - len(self.TRUNCATION_NOTICE)
-            return output[:keep] + self.TRUNCATION_NOTICE
-        return output
+            # Skip in bounded chunks, including unusually long physical lines.
+            for _ in range(start_line - 1):
+                while True:
+                    chunk = source.readline(self.MAX_OUTPUT_CHARS + 1)
+                    if not chunk:
+                        return f"[No lines: start_line={start_line} is beyond EOF.]"
+                    if chunk.endswith("\n"):
+                        break
+            line_number = start_line
+            while end_line is None or line_number <= end_line:
+                line = source.readline(self.MAX_OUTPUT_CHARS + 1)
+                if not line:
+                    break
+                line = line.rstrip("\n")
+                formatted = f"{line_number:>4}: {line}"
+                output_size += len(formatted) + bool(lines)
+                lines.append(formatted)
+                if output_size > self.MAX_OUTPUT_CHARS:
+                    # Keep whole lines so the suggested next read loses no text.
+                    while lines:
+                        if len(lines) == 1:
+                            notice = (f"\n[Output truncated within line {start_line}. "
+                                      "Use bash to inspect character slices of this long line.]")
+                            return lines[0][:self.MAX_OUTPUT_CHARS - len(notice)] + notice
+                        lines.pop()
+                        notice = f"\n[Output truncated. Continue with start_line={line_number}.]"
+                        output = "\n".join(lines)
+                        if len(output) + len(notice) <= self.MAX_OUTPUT_CHARS:
+                            return output + notice
+                        line_number -= 1
+                line_number += 1
+        return "\n".join(lines) if lines or start_line == 1 else f"[No lines: start_line={start_line} is beyond EOF.]"
 
 
 class EditFile(_WorkspaceTool):

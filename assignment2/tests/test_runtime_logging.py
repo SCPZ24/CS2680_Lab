@@ -1,7 +1,9 @@
 """From assignment2/: python3 -B -m unittest discover -s tests -v."""
 
-from contextlib import chdir
-from datetime import datetime
+from contextlib import chdir, redirect_stderr, redirect_stdout
+from datetime import datetime, timedelta, timezone
+from email.utils import format_datetime
+import io
 import json
 import os
 from pathlib import Path
@@ -12,7 +14,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 import httpx
-from openai import APIConnectionError, AuthenticationError
+from openai import APIConnectionError, AuthenticationError, RateLimitError
 from openai.types.chat import ChatCompletion
 
 from src import integrations, runtime, tools
@@ -107,12 +109,37 @@ class RuntimeLoggingTests(unittest.TestCase):
 
     def test_exhausted_retries_record_error_end(self):
         self.client.invoke.side_effect = APIConnectionError(request=httpx.Request("POST", "https://example.test"))
-        with patch.object(runtime.time, "sleep"), self.assertRaises(APIConnectionError):
+        with patch.object(runtime.time, "sleep") as sleep, self.assertRaises(APIConnectionError):
             self.agent.run_loop()
         rows = self.events()
-        self.assertEqual([r["backoff_s"] for r in rows if r["event"] == "api_retry"], [1, 2])
-        self.assertEqual(self.client.invoke.call_count, 3)
+        self.assertEqual([r["backoff_s"] for r in rows if r["event"] == "api_retry"], [1, 2, 4, 8, 16, 32])
+        self.assertEqual([c.args[0] for c in sleep.call_args_list], [1, 2, 4, 8, 16, 32])
+        self.assertEqual(self.client.invoke.call_count, 7)
         self.assertEqual(rows[-1]["reason"], "error")
+
+    def test_rate_limit_retry_after_and_stderr_progress(self):
+        future = format_datetime(datetime.now(timezone.utc) + timedelta(seconds=180), usegmt=True)
+        for header, minimum, maximum in [
+            ("90", 90, 90), (future, 175, 180), ("invalid", 1, 1),
+            ("NaN", 1, 1), ("-10", 1, 1),
+        ]:
+            with self.subTest(retry_after=header):
+                error = RateLimitError(
+                    "TPM limit reached", response=httpx.Response(
+                        429, headers={"Retry-After": header},
+                        request=httpx.Request("POST", "https://example.test")), body=None,
+                )
+                self.client.invoke.side_effect = [error, response()]
+                stdout, stderr = io.StringIO(), io.StringIO()
+                with patch.object(runtime.time, "sleep") as sleep, redirect_stdout(stdout), redirect_stderr(stderr):
+                    self.agent.run_loop()
+                self.assertGreaterEqual(sleep.call_args.args[0], minimum)
+                self.assertLessEqual(sleep.call_args.args[0], maximum)
+                self.assertEqual(stdout.getvalue(), "")
+                self.assertIn("TPM limit reached", stderr.getvalue())
+                self.assertIn("attempt 2/7", stderr.getvalue())
+                self.assertIn("input_tokens=10", stderr.getvalue())
+        self.events()  # The assignment JSONL schema stays unchanged.
 
     def test_auth_error_not_retried(self):
         self.client.invoke.side_effect = AuthenticationError(

@@ -19,7 +19,7 @@
 # unless $TASKS_JSON names another task file (see mytest/).
 #
 # Produces:  model_patch_<instance_id>.diff  in the repo root
-#            madsLoop_logs/                    copied back from the container
+#            madsLoop_logs/                    written live, including on failure
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -70,12 +70,16 @@ if ! docker pull $PLATFORM_FLAG "$IMAGE" >&2; then
   echo "== using local image $IMAGE" >&2
 fi
 
+LOG_DIR="$REPO_ROOT/madsLoop_logs/$INSTANCE_ID"
+mkdir -p "$LOG_DIR"
+echo "== agent logs (written live): $LOG_DIR" >&2
+
 docker run --rm $PLATFORM_FLAG \
   --entrypoint bash \
   -v "$REPO_ROOT:/madsLoop" \
+  -v "$LOG_DIR:/tmp/madsLoop_logs" \
   -e SILICONFLOW_API_KEY="${SILICONFLOW_API_KEY:-}" \
   -e PROBLEM_FILE="/madsLoop/.problem_$IDX.txt" \
-  -e LOG_DEST="/madsLoop/madsLoop_logs/$INSTANCE_ID" \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   "$IMAGE" \
   -c 'set -e
@@ -174,12 +178,8 @@ docker run --rm $PLATFORM_FLAG \
       }
       ensure_openai
       cd /tmp
+      echo "== starting agent (progress on stderr; JSONL logs saved live)" >&2
       "$AGENT_PY" /madsLoop/madsLoop.py -p "$(cat "$PROBLEM_FILE")" --log "$WD"
-      if [ -d madsLoop_logs ]; then
-        mkdir -p "$LOG_DEST" && cp -r madsLoop_logs/. "$LOG_DEST"/ && chown -R "$HOST_UID:$HOST_GID" /madsLoop/madsLoop_logs || true
-      else
-        echo "== WARNING: agent wrote no madsLoop_logs/ despite --log" >&2
-      fi
       # Include files the agent CREATED: intent-to-add makes untracked
       # (non-gitignored) files show up in git diff with their content.
       git -C "$WD" add -N . >&2 2>/dev/null || true
