@@ -3,6 +3,7 @@ import argparse
 from integrations import LLMClient
 from runtime import AgentRuntime, LoopMsgBox
 from tools import Bash, ReadFile, EditFile, WriteFile, Done, Grep, Glob, PatchEdit
+from log_client import RuntimeLogClient, EmptyLogClient
 
 
 # Personal
@@ -13,10 +14,15 @@ LLM_API_KEY = os.environ.get("SILICONFLOW_API_KEY")
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="madsLoop coding agent")
     parser.add_argument("-p", required=True, help="需要解决的问题描述")
-    parser.add_argument("--workdir", required=True, help="工作目录")
-    parser.add_argument("--logs", action="store_true", help="开启运行日志")
+    parser.add_argument("workdir", nargs="?", help="工作目录")
+    parser.add_argument("--workdir", dest="legacy_workdir", help="工作目录（兼容旧用法）")
+    parser.add_argument("--log", "--logs", dest="logs", action="store_true", help="开启运行日志")
     args = parser.parse_args()
-
+    if args.workdir and args.legacy_workdir:
+        parser.error("Supply workdir either positionally or via --workdir, not both")
+    args.workdir = args.workdir or args.legacy_workdir
+    if not args.workdir:
+        parser.error("workdir is required")
 
     if not LLM_API_KEY:
         parser.error("SILICONFLOW_API_KEY is required")
@@ -39,8 +45,13 @@ if __name__ == "__main__":
         Glob(args.workdir),
         PatchEdit(args.workdir),
     ]
+    log_client = None
+    if args.logs:
+        log_client = RuntimeLogClient()
+    else:
+        log_client = EmptyLogClient()
 
-    runtime = AgentRuntime(llm_client, args.workdir, loop_msg_box, log_path=args.logs, tool_group=tool_set)
+    runtime = AgentRuntime(llm_client, log_client, args.workdir, loop_msg_box, tool_group=tool_set)
 
     runtime.add_user_message(args.p)
 
