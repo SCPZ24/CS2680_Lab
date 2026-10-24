@@ -29,7 +29,12 @@ class OpenRouterClientTests(unittest.TestCase):
             original = client.client
             client.client = original.with_options(http_client=transport)
             try:
-                result = client.invoke([{"role": "user", "content": "hello"}])
+                result = client.invoke(
+                    [{"role": "user", "content": "hello"}],
+                    tools=[{"type": "function", "function": {
+                        "name": "read_file", "parameters": {"type": "object", "properties": {}}
+                    }}],
+                )
             finally:
                 client.client.close()
                 original.close()
@@ -42,6 +47,7 @@ class OpenRouterClientTests(unittest.TestCase):
         self.assertEqual(body["model"], "qwen/qwen3.6-35b-a3b")
         self.assertEqual(body["reasoning"], {"enabled": False})
         self.assertFalse(body["stream"])
+        self.assertTrue(body["parallel_tool_calls"])
         self.assertNotIn("enable_thinking", body)
 
     def test_missing_openrouter_key_does_not_use_other_provider_key(self):

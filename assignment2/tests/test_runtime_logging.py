@@ -96,6 +96,30 @@ class RuntimeLoggingTests(unittest.TestCase):
         self.assertIsNone(rows[1]["prompt_tokens"])
         self.assertEqual(rows[-1]["reason"], "no_tool_calls")
 
+    def test_batched_results_are_all_returned_before_next_request(self):
+        (self.root / "one.txt").write_text("first", encoding="utf-8")
+
+        def invoke(messages, tools):
+            if self.client.invoke.call_count == 1:
+                return response([
+                    ("read_file", '{"path":"one.txt"}'),
+                    ("read_file", '{"path":"missing.txt"}'),
+                ])
+            self.assertEqual(messages[-3]["role"], "assistant")
+            call_ids = [call["id"] for call in messages[-3]["tool_calls"]]
+            self.assertEqual([m["role"] for m in messages[-2:]], ["tool", "tool"])
+            self.assertEqual([m["tool_call_id"] for m in messages[-2:]], call_ids)
+            self.assertIn("first", messages[-2]["content"])
+            self.assertIn("Tool error:", messages[-1]["content"])
+            return response([("done", '{"summary":"finished"}')])
+
+        self.client.invoke.side_effect = invoke
+        self.assertEqual(self.agent.run_loop(), "done")
+        self.assertEqual(self.client.invoke.call_count, 2)
+        rows = self.events()
+        calls = [r for r in rows if r["event"] == "tool_call"]
+        self.assertEqual([r["iteration"] for r in calls], [1, 1, 2])
+
     def test_transient_retry_then_success(self):
         error = APIConnectionError(request=httpx.Request("POST", "https://example.test"))
         self.client.invoke.side_effect = [error, response()]

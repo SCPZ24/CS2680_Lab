@@ -45,6 +45,8 @@ class LLMClient:
         }
         if tools is not None:
             request["tools"] = tools
+            if tools:
+                request["parallel_tool_calls"] = True
         if self.enable_thinking is not None:
             request["extra_body"] = {"reasoning": {"enabled": self.enable_thinking}}
         return self.client.chat.completions.create(**request)
