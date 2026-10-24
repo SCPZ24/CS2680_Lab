@@ -9,18 +9,18 @@ from openai import OpenAI
 
 
 class LLMClient:
-    """Small wrapper around the course's OpenAI-compatible chat endpoint."""
+    """OpenAI-compatible chat client, defaulting to SiliconFlow."""
 
     def __init__(
         self,
-        base_url: str = "https://api.cs2680.com/v1",
+        base_url: str = "https://api.siliconflow.cn/v1",
         api_key: str | None = None,
-        model_name: str = "qwen3.6-35b-a3b",
+        model_name: str = "Qwen/Qwen3.6-35B-A3B",
         enable_thinking: bool | None = None,
     ):
-        api_key = api_key or os.environ.get("CS2680_API_KEY")
+        api_key = api_key or os.environ.get("SILICONFLOW_API_KEY")
         if not api_key:
-            raise ValueError("CS2680_API_KEY is required")
+            raise ValueError("SILICONFLOW_API_KEY is required")
 
         self.model_name = model_name
         self.enable_thinking = enable_thinking

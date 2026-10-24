@@ -12,7 +12,7 @@
 # Run from your agent repo root (the directory containing madsLoop.py), or
 # set MADSLOOP_REPO to point at it:
 #
-#   export CS2680_API_KEY=hyi-...
+#   export SILICONFLOW_API_KEY=sk-...
 #   bash evaluation_scripts/run_task.sh <task_index>
 #
 # agent_task_input.json is read from the evaluation_scripts folder itself,
@@ -39,8 +39,8 @@ if [[ ! -f "$TASKS_JSON" ]]; then
   exit 1
 fi
 
-if [[ -z "${CS2680_API_KEY:-}" ]]; then
-  echo "error: CS2680_API_KEY is not set — export it before running (see 'The model API')" >&2
+if [[ -z "${SILICONFLOW_API_KEY:-}" ]]; then
+  echo "error: SILICONFLOW_API_KEY is not set — export your SiliconFlow key before running" >&2
   exit 1
 fi
 
@@ -73,7 +73,7 @@ fi
 docker run --rm $PLATFORM_FLAG \
   --entrypoint bash \
   -v "$REPO_ROOT:/madsLoop" \
-  -e CS2680_API_KEY="${CS2680_API_KEY:-}" \
+  -e SILICONFLOW_API_KEY="${SILICONFLOW_API_KEY:-}" \
   -e PROBLEM_FILE="/madsLoop/.problem_$IDX.txt" \
   -e LOG_DEST="/madsLoop/madsLoop_logs/$INSTANCE_ID" \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \

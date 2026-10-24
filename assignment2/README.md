@@ -77,4 +77,4 @@ python3 -B -m tests.smoke_test
 
 从本目录运行课程脚本，或将 `MADSLOOP_REPO` 指向本目录的绝对路径。镜像按需拉取。
 
-当前评测脚本仍保持课程原样：`run_all.sh` / `run_task.sh` 检查和转发的是 `CS2680_API_KEY`，而当前个人入口读取 `SILICONFLOW_API_KEY`。进入容器阶段前还需要适配密钥传递；本次目录整理不代表容器评测已经跑通。
+个人自学环境使用硅基流动：`run_all.sh` / `run_task.sh` 已改为检查并转发 `SILICONFLOW_API_KEY`，入口和 LLM client 默认使用 `https://api.siliconflow.cn/v1` 与模型 `Qwen/Qwen3.6-35B-A3B`。运行前在宿主机导出该密钥，脚本会将其传入任务容器。容器评测尚未实际验证。

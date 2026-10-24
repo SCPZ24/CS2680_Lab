@@ -3,7 +3,7 @@
 # script), bundle the patches into patches.json, score them with the
 # official SWE-bench Pro evaluation, and write a pass/fail summary to
 # run_all_results.md. Run from your agent repo root, or set MADSLOOP_REPO.
-# Export CS2680_API_KEY first — it is forwarded into every task container.
+# Export SILICONFLOW_API_KEY first — it is forwarded into every task container.
 #
 #   bash evaluation_scripts/run_all.sh [--workers N]
 #
@@ -30,8 +30,8 @@ done
   echo "error: --workers must be a positive integer, got '$WORKERS'" >&2; exit 2; }
 
 # Checked once here so a missing key fails now, not $N times inside the logs.
-if [[ -z "${CS2680_API_KEY:-}" ]]; then
-  echo "error: CS2680_API_KEY is not set — export it before running (see 'The model API')" >&2
+if [[ -z "${SILICONFLOW_API_KEY:-}" ]]; then
+  echo "error: SILICONFLOW_API_KEY is not set — export your SiliconFlow key before running" >&2
   exit 1
 fi
 
