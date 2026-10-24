@@ -7,20 +7,12 @@ from typing import Any, TYPE_CHECKING
 
 from openai import APIConnectionError, APIStatusError
 
-try:
-    from integrations import LLMClient
-    from prompts import RAW_SYSTEM_PROMPT
-    from log_client import LogClient
-except ModuleNotFoundError:  # Allows ``import assignment2.runtime`` as well.
-    from .integrations import LLMClient
-    from .prompts import RAW_SYSTEM_PROMPT
-    from .log_client import LogClient
+from .integrations import LLMClient
+from .prompts import RAW_SYSTEM_PROMPT
+from .log_client import LogClient
 
 if TYPE_CHECKING:
-    try:
-        from tools import Tool
-    except ModuleNotFoundError:
-        from .tools import Tool
+    from .tools import Tool
 
 
 class MSG(Enum):

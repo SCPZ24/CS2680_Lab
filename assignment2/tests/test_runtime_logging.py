@@ -1,4 +1,4 @@
-"""Offline checks: python3 -B -m unittest assignment2.test_runtime_logging."""
+"""From assignment2/: python3 -B -m unittest discover -s tests -v."""
 
 from contextlib import chdir
 from datetime import datetime
@@ -15,9 +15,9 @@ import httpx
 from openai import APIConnectionError, AuthenticationError
 from openai.types.chat import ChatCompletion
 
-from assignment2 import integrations, log_client, runtime, tools
-from assignment2.log_client import EmptyLogClient, RuntimeLogClient
-from assignment2.runtime import AgentRuntime, LoopMsgBox
+from src import integrations, runtime, tools
+from src.log_client import RuntimeLogClient
+from src.runtime import AgentRuntime, LoopMsgBox
 
 
 def response(calls=(), usage=True):
@@ -132,9 +132,8 @@ class RuntimeLoggingTests(unittest.TestCase):
             RuntimeLogClient(str(self.logger.log_path))
 
     def test_cli_logs_opt_in_and_legacy_aliases(self):
-        entry = Path(__file__).with_name("madsLoop.py").resolve()
-        modules = {"integrations": integrations, "runtime": runtime, "tools": tools, "log_client": log_client}
-        with chdir(self.root), patch.dict(sys.modules, modules), patch.dict(os.environ, {"SILICONFLOW_API_KEY": "offline"}), patch.object(
+        entry = Path(__file__).resolve().parents[1] / "madsLoop.py"
+        with chdir(self.root), patch.dict(os.environ, {"SILICONFLOW_API_KEY": "offline"}), patch.object(
             integrations.LLMClient, "invoke", return_value=response()
         ):
             for arguments, count in [

@@ -1,9 +1,9 @@
 import argparse
 
-from integrations import LLMClient
-from runtime import AgentRuntime, LoopMsgBox
-from tools import Bash, ReadFile, EditFile, WriteFile, Done, Grep, Glob, PatchEdit
-from log_client import RuntimeLogClient, EmptyLogClient
+from src.integrations import LLMClient
+from src.runtime import AgentRuntime, LoopMsgBox
+from src.tools import Bash, ReadFile, EditFile, WriteFile, Done, Grep, Glob, PatchEdit
+from src.log_client import RuntimeLogClient, EmptyLogClient
 
 
 # Personal

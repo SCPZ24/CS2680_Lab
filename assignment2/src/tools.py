@@ -13,10 +13,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-try:
-    from runtime import MSG, LoopMsgBox
-except ModuleNotFoundError:  # Allows ``import assignment2.tools`` as well.
-    from .runtime import MSG, LoopMsgBox
+from .runtime import MSG, LoopMsgBox
 
 
 class Tool:

@@ -8,3 +8,5 @@ CS2680分为2个Part
 我学习Part1。
 
 这个仓库用于完成[Assignment 2](https://cs2680.com/assignments/assignment2)和[Assignment 3](https://cs2680.com/assignments/assignment3)。
+
+实验二的代码、运行方式和交付状态见 [assignment2/README.md](assignment2/README.md)。运行实验二命令前，先进入 `assignment2/`。

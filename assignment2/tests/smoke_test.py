@@ -1,4 +1,4 @@
-"""Live, bounded harness check: python3 -B assignment2/smoke_test.py.
+"""From assignment2/: python3 -B -m tests.smoke_test.
 
 Requires SILICONFLOW_API_KEY. Uses the actual CLI entry point and a temporary
 repository; diagnostics are separate from the assignment's agent-log schema.
@@ -13,8 +13,8 @@ import sys
 import tempfile
 from unittest.mock import patch
 
-from integrations import LLMClient
-from runtime import AgentRuntime
+from src.integrations import LLMClient
+from src.runtime import AgentRuntime
 
 
 def main():
@@ -92,7 +92,7 @@ class TotalTests(unittest.TestCase):
         f"Use {sys.executable} -B -m unittest -v test_cart to run tests. "
         "Operate only inside the supplied working directory."
     )
-    entry = Path(__file__).with_name("madsLoop.py")
+    entry = Path(__file__).resolve().parents[1] / "madsLoop.py"
     try:
         with patch.object(LLMClient, "invoke", invoke), patch.object(AgentRuntime, "run_loop", run_loop), patch.object(
             sys, "argv", [str(entry), "-p", prompt, "--workdir", str(workspace)]
