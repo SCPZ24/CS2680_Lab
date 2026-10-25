@@ -3,9 +3,9 @@
 # script), bundle the patches into patches.json, score them with the
 # official SWE-bench Pro evaluation, and write a pass/fail summary to
 # run_all_results.md. Run from your agent repo root, or set MADSLOOP_REPO.
-# Export OPENROUTER_API_KEY first — it is forwarded into every task container.
+# Defaults to OpenRouter and OPENROUTER_API_KEY; -b/-k override URL/key.
 #
-#   bash evaluation_scripts/run_all.sh [--workers N]
+#   bash evaluation_scripts/run_all.sh [--workers N] [-b BASE_URL] [-k API_KEY]
 #
 # --workers N (default 10, or $WORKERS) sets BOTH the number of task
 # containers run concurrently AND the evaluation's --num_workers.
@@ -18,8 +18,12 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${MADSLOOP_REPO:-$PWD}" && pwd)"
 
 WORKERS="${WORKERS:-10}"
+export MADSLOOP_BASE_URL="https://openrouter.ai/api/v1"
+export MADSLOOP_API_KEY="${OPENROUTER_API_KEY:-}"
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    -b|--base-url) MADSLOOP_BASE_URL="${2:?$1 needs a URL}"; shift 2 ;;
+    -k|--api-key) MADSLOOP_API_KEY="${2:?$1 needs a key}"; shift 2 ;;
     --workers) WORKERS="${2:?--workers needs a number}"; shift 2 ;;
     --workers=*) WORKERS="${1#*=}"; shift ;;
     -h|--help) sed -n '2,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -30,8 +34,8 @@ done
   echo "error: --workers must be a positive integer, got '$WORKERS'" >&2; exit 2; }
 
 # Checked once here so a missing key fails now, not $N times inside the logs.
-if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
-  echo "error: OPENROUTER_API_KEY is not set — export your OpenRouter key before running" >&2
+if [[ -z "$MADSLOOP_API_KEY" ]]; then
+  echo "error: supply -k/--api-key or set OPENROUTER_API_KEY" >&2
   exit 1
 fi
 

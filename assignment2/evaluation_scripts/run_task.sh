@@ -39,8 +39,8 @@ if [[ ! -f "$TASKS_JSON" ]]; then
   exit 1
 fi
 
-if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
-  echo "error: OPENROUTER_API_KEY is not set — export your OpenRouter key before running" >&2
+if [[ -z "${MADSLOOP_API_KEY:-${OPENROUTER_API_KEY:-}}" ]]; then
+  echo "error: set OPENROUTER_API_KEY, or use run_all.sh -k/--api-key" >&2
   exit 1
 fi
 
@@ -88,7 +88,8 @@ docker run --rm $PLATFORM_FLAG \
   -e UV_PYTHON_INSTALL_DIR=/tmp/uv-pythons \
   -e PIP_CACHE_DIR=/root/.cache/pip \
   -e PIP_DISABLE_PIP_VERSION_CHECK=1 \
-  -e OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}" \
+  -e MADSLOOP_BASE_URL="${MADSLOOP_BASE_URL:-https://openrouter.ai/api/v1}" \
+  -e MADSLOOP_API_KEY="${MADSLOOP_API_KEY:-${OPENROUTER_API_KEY:-}}" \
   -e PROBLEM_FILE="/madsLoop/.problem_$IDX.txt" \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   "$IMAGE" \
@@ -190,7 +191,8 @@ docker run --rm $PLATFORM_FLAG \
       bash /madsLoop/docker_env.sh
       cd /tmp
       echo "== starting agent (progress on stderr; JSONL logs saved live)" >&2
-      "$AGENT_PY" /madsLoop/madsLoop.py -p "$(cat "$PROBLEM_FILE")" --log "$WD"
+      "$AGENT_PY" /madsLoop/madsLoop.py -p "$(cat "$PROBLEM_FILE")" \
+        -b "$MADSLOOP_BASE_URL" -k "$MADSLOOP_API_KEY" --log "$WD"
       # Include files the agent CREATED: intent-to-add makes untracked
       # (non-gitignored) files show up in git diff with their content.
       git -C "$WD" add -N . >&2 2>/dev/null || true
