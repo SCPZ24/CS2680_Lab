@@ -1,5 +1,7 @@
 # Assignment 2 — madsLoop
 
+**状态：个人实验结束。** 官方全量报告 2/10（task 0 沿用旧补丁结果）；四个自创任务 1/4 通过。固定 harness，未追求 2+2。详见 [实验记录](docs/3-全量测试结果与自创任务评测.md)。
+
 本目录是实验二的运行根目录。当前[课程官网](https://cs2680.com/assignments/assignment2)要求在共享课程仓库中保留 `assignment2/`；本地 starter 的 `project_description_assignment.md` 末尾仍使用旧的 `<repo root>` 表述。这里按当前官网布局整理，后续 Assignment3 可以独立存放。
 
 ## 目录职责
@@ -17,7 +19,7 @@ assignment2/
 │   └── log_client.py            # JSONL 运行日志
 ├── evaluation_scripts/          # 课程提供的任务与评测脚本
 ├── developer_logs/              # 待收集真实开发会话 JSONL
-├── mytest/                      # 待完成的四个自建评测任务
+├── mytest/                      # 四个已运行的自建评测任务
 │   ├── README.md                # 所需文件和当前完成状态
 │   ├── tasks/                   # 每个任务的 Dockerfile、gold.diff
 │   └── results/                 # 每个任务的 before/after 日志
@@ -25,7 +27,7 @@ assignment2/
 │   ├── test_runtime_logging.py
 │   └── smoke_test.py
 ├── docs/                        # 学习笔记
-│   └── Part1工作心得.md
+│   └── 1-Part1工作心得.md
 └── project_description_assignment.md  # 原始作业说明
 ```
 
@@ -66,10 +68,9 @@ python3 -B -m unittest discover -s tests -v
 python3 -B -m tests.smoke_test
 ```
 
-## 尚未完成的交付内容
+## 课程正式提交材料（个人实验结束不代表已交齐）
 
 - `developer_logs/`：需导出真实开发会话 `.jsonl`；学习心得已放在 `docs/`，不能替代会话日志。
-- `mytest/`：四个真实任务、镜像构建文件、参考补丁、验证脚本和结果，详见该目录的 README。
 - `writeup.pdf`：待完成；课程要求正文由学习者自行撰写。
 - 视频：待录制。
 
@@ -77,7 +78,7 @@ python3 -B -m tests.smoke_test
 
 从本目录运行课程脚本，或将 `MADSLOOP_REPO` 指向本目录的绝对路径。镜像按需拉取。
 
-个人自学环境使用 OpenRouter：`run_all.sh` / `run_task.sh` 已改为检查并转发 `OPENROUTER_API_KEY`，入口和 LLM client 默认使用 `https://openrouter.ai/api/v1` 与模型 `qwen/qwen3.6-35b-a3b`。运行前在宿主机导出该密钥，脚本会将其传入任务容器。OpenRouter 接线已完成；切换后的真实模型调用和容器评测待验证。
+个人自学环境使用 OpenRouter：`run_all.sh` / `run_task.sh` 已改为检查并转发 `OPENROUTER_API_KEY`，入口和 LLM client 默认使用 `https://openrouter.ai/api/v1` 与模型 `qwen/qwen3.6-35b-a3b`。运行前在宿主机导出该密钥，脚本会将其传入任务容器。OpenRouter 已完成真实模型调用与四个自创任务的容器评测。
 
 
 ### 启动缓存

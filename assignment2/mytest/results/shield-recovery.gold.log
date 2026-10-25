@@ -1,0 +1,23 @@
+TASK shield-recovery
+BASE 11c19baf6760c2c56d5dee3fa161b5b8e66f86d9
+PATCH /Users/zytwd/Code/Labs/CS2680_Lab/assignment2/mytest/tasks/shield-recovery/gold.diff
+HEAD is now at 11c19ba feat: add player shield and health rules
+
+ RUN  v3.2.4 /app
+
+ ✓ src/game/state/playerState.test.ts (7 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  16:38:50
+   Duration  281ms (transform 26ms, setup 11ms, collect 14ms, tests 3ms, environment 167ms, prepare 26ms)
+
+JSON report written to /eval-results/vitest.json
+PASSED src/game/state/playerState.test.ts::playerState survival rules createInitialPlayerState returns expected defaults
+PASSED src/game/state/playerState.test.ts::playerState survival rules routes incoming damage to shield before health
+PASSED src/game/state/playerState.test.ts::playerState survival rules overflow damage spills from shield to health
+PASSED src/game/state/playerState.test.ts::playerState survival rules starts shield recovery only after the recovery delay
+PASSED src/game/state/playerState.test.ts::playerState survival rules shield recovery is linear across multiple ticks (no double-counting)
+PASSED src/game/state/playerState.test.ts::playerState survival rules heals health with pickups without exceeding max health
+PASSED src/game/state/playerState.test.ts::playerState survival rules applyDamage does not update lastDamageAt when effective damage is <= 0
+RESOLVED shield-recovery

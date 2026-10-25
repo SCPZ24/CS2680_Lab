@@ -1,0 +1,47 @@
+diff --git a/src/updater/system.ts b/src/updater/system.ts
+index 615b0c6..745faa0 100644
+--- a/src/updater/system.ts
++++ b/src/updater/system.ts
+@@ -32,6 +32,7 @@ function commandFailure(result: CommandResult, fallback: string): string {
+ export function createSystemUpdater(dependencies: SystemUpdaterDependencies): {detect: UpdateDetector; execute: UpdateExecutor} {
+   const detect: UpdateDetector = async (entry: ValidEntry): Promise<UpdateStep[]> => {
+     const phases: UpdateStep[] = [];
++    const gitMarker = await hasGitMarker(entry.realPath);
+     const git = await dependencies.findExecutable("git");
+     if (git) {
+       const top = await dependencies.commandOutput(git, ["-C", entry.realPath, "rev-parse", "--show-toplevel"]).catch(() => ({code: 1, stdout: "", stderr: ""}));
+@@ -40,10 +41,12 @@ export function createSystemUpdater(dependencies: SystemUpdaterDependencies): {d
+           const root = await realpath(top.stdout.trim());
+           if (root === entry.realPath) phases.push({manager: "git", key: `git:${root}`, cwd: root});
+         } catch {
+-          // An unresolved reported root is not safe to update.
++          if (gitMarker) phases.push({manager: "git", key: `git:${entry.realPath}`, cwd: entry.realPath, blockedReason: "could not verify Git worktree"});
+         }
++      } else if (gitMarker) {
++        phases.push({manager: "git", key: `git:${entry.realPath}`, cwd: entry.realPath, blockedReason: "could not verify Git worktree"});
+       }
+-    } else if (await hasGitMarker(entry.realPath)) {
++    } else if (gitMarker) {
+       phases.push({manager: "git", key: `git:${entry.realPath}`, cwd: entry.realPath});
+     }
+     if (await isRegularFile(path.join(entry.realPath, "package.json"))) {
+@@ -53,6 +56,7 @@ export function createSystemUpdater(dependencies: SystemUpdaterDependencies): {d
+   };
+ 
+   const executeGit = async (step: UpdateStep): Promise<StepResult> => {
++    if (step.blockedReason) return {manager: "git", status: "failed", reason: step.blockedReason};
+     const git = await dependencies.findExecutable("git");
+     if (!git) return {manager: "git", status: "skipped", reason: "git not found"};
+     const run = async (args: string[]) => dependencies.commandOutput(git, ["-C", step.cwd, ...args]);
+diff --git a/src/updater/updater.ts b/src/updater/updater.ts
+index 0867bbb..8feb051 100644
+--- a/src/updater/updater.ts
++++ b/src/updater/updater.ts
+@@ -6,6 +6,7 @@ export interface UpdateStep {
+   manager: UpdateManager;
+   key: string;
+   cwd: string;
++  blockedReason?: string;
+ }
+ 
+ export type StepResult =

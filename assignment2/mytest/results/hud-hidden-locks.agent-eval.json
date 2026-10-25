@@ -1,0 +1,19 @@
+{
+  "instance_id": "hud-hidden-locks",
+  "patch": "assignment2/mytest/results/hud-hidden-locks.agent.diff",
+  "resolved": true,
+  "exit_code": 0,
+  "tests": {
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue executes FIFO with a successful refresh between writes": "passed",
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue rejects during agent lock, pauses queued work, and resumes only after refresh": "passed",
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue skips stale all requests and invalid file requests": "passed",
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue stays locked after a failed agent refresh until a later success": "passed",
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue contains validation failures without rejecting the pump": "passed",
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue keeps hidden agent work locked until a later successful refresh": "passed",
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue retains parallel tool locks until the final tool ends and refresh succeeds": "passed",
+    "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue settles hidden agent lifecycle without leaving ghost tool locks": "passed",
+    "packages/pi-worktree-hud/tests/runtime/session.test.ts::SessionRuntime hidden agent lifecycle blocks staging when an edit starts while the HUD is hidden": "passed",
+    "packages/pi-worktree-hud/tests/runtime/session.test.ts::SessionRuntime hidden agent lifecycle clears settled hidden tool ids but keeps staging gated for refresh": "passed"
+  },
+  "missing_or_failed": []
+}

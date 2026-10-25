@@ -1,18 +1,43 @@
-# 自建任务（待实现）
+# 四个自创任务
 
-本目录对应作业 Part 2.6。`../tests/` 中的 harness 单元测试和简单 API 联调项目不计入这里要求的四个任务。
+来源：个人项目的真实修复提交，见 `sources.json`。源码 bundle 只包含修复前及更早的历史；Docker 构建不依赖本机原项目路径。`gold.diff` 仅包含相关生产代码，回归测试单独保存在各任务的 `tests/` 中。
 
-需要补齐：
+| index | instance_id | 修复提交 |
+| --- | --- | --- |
+| 0 | shield-recovery | CodexPlayground `ad70966` |
+| 1 | piw-safe-update | piw `e6ab51f` |
+| 2 | hud-status-metadata | z24-pi-extensions `e87235b` |
+| 3 | hud-hidden-locks | z24-pi-extensions `f31498a` |
 
-| 文件 | 要求 |
-| --- | --- |
-| `solved_after_change.json` | 两个改进 harness 后才解决的任务 |
-| `unsolved.json` | 两个提交时 harness 仍未解决的任务 |
-| `task_test.json` | 四个任务的评测配置 |
-| `tasks/<instance_id>/Dockerfile` | 固定代码版本并预装测试依赖 |
-| `tasks/<instance_id>/gold.diff` | 能通过测试的真实修复 |
-| `verify.sh` | 在全新容器中应用补丁并验证 |
-| `results/<instance_id>.before.log` | 四个基线运行记录 |
-| `results/<instance_id>.after.log` | 四个修复后运行记录 |
+## 复现
 
-任务来源、验证规则和字段格式以 `../project_description_assignment.md` 的 Part 2.6 为准。当前仅建立目录，不创建空任务 JSON 或假验证脚本。
+从 `assignment2/` 执行，配置 `OPENROUTER_API_KEY`。镜像按需构建，依赖在构建时安装，判分时断网。
+
+```bash
+IID=shield-recovery
+docker build -t "cs2680-mytest/$IID:v1" "mytest/tasks/$IID"
+bash mytest/verify.sh "$IID"                         # 基线：预期 unresolved
+bash mytest/verify.sh "$IID" "mytest/tasks/$IID/gold.diff"
+bash mytest/run.sh 0 > "mytest/results/$IID.agent.log" 2>&1
+bash mytest/verify.sh "$IID" "mytest/results/$IID.agent.diff"
+```
+
+`tasks.json` 是四个任务的统一入口。`run.sh` 固定使用 `e7a0e61` 的 harness、OpenRouter、`qwen/qwen3.6-35b-a3b`、`reasoning.enabled=true`，复用课程 `run_task.sh`。只挂载 harness 文件，不向 agent 挂载 gold 或评测数据；完整 trace 位于 `../madsLoop_logs/<instance_id>/`。
+
+`verify.sh` 在全新容器中复位基线、应用候选补丁、恢复评测测试及配置，逐项检查 `fail_to_pass` / `pass_to_pass`。测试缺失、跳过、失败或测试进程异常均不能通过。退出码：0 通过，1 未解决，2 环境失败。
+
+```mermaid
+flowchart LR
+    B[修复前源码] --> A[固定 harness 运行]
+    A --> P[agent.diff]
+    P --> V[全新断网容器 + 评测测试]
+    B --> G[gold.diff 对照]
+    G --> V
+    V --> R[逐项判分与日志]
+```
+
+本轮 **1/4 通过**。`solved.json` 是直接通过的 1 项，`unsolved.json` 是未解决的 3 项，`solved_after_change.json` 为空；没有改进 harness 后再运行的实验。
+
+`results/summary.json` 汇总模型结果、token、trace、镜像 ID 和补丁校验值。逐任务日志：`before` 为基线，`agent.log` 为模型运行，`agent-eval` 为模型判分，`gold` 为真实修复判分；`after` 按作业约定保存通过任务的模型结果、未解决任务的 gold 结果，不代表模型全通过。
+
+结果见 `results/` 和 [实验记录](../docs/3-全量测试结果与自创任务评测.md)。不为满足课程 2+2 要求调整结果分类。

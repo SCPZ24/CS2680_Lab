@@ -1,0 +1,104 @@
+{
+  "shield-recovery": {
+    "before_repo_set_cmd": "git reset --hard 11c19baf6760c2c56d5dee3fa161b5b8e66f86d9 && git clean -fd -e node_modules/",
+    "selected_test_files_to_run": [
+      "src/game/state/playerState.test.ts"
+    ],
+    "fail_to_pass": [
+      "src/game/state/playerState.test.ts::playerState survival rules shield recovery is linear across multiple ticks (no double-counting)",
+      "src/game/state/playerState.test.ts::playerState survival rules applyDamage does not update lastDamageAt when effective damage is <= 0"
+    ],
+    "pass_to_pass": [
+      "src/game/state/playerState.test.ts::playerState survival rules createInitialPlayerState returns expected defaults",
+      "src/game/state/playerState.test.ts::playerState survival rules routes incoming damage to shield before health",
+      "src/game/state/playerState.test.ts::playerState survival rules overflow damage spills from shield to health",
+      "src/game/state/playerState.test.ts::playerState survival rules starts shield recovery only after the recovery delay",
+      "src/game/state/playerState.test.ts::playerState survival rules heals health with pickups without exceeding max health"
+    ]
+  },
+  "piw-safe-update": {
+    "before_repo_set_cmd": "git reset --hard 04a20fdd5ea3b5ad700e451aa4726f8fae78f96b && git clean -fd -e node_modules/",
+    "selected_test_files_to_run": [
+      "tests/updater.test.ts"
+    ],
+    "fail_to_pass": [
+      "tests/updater.test.ts::system update adapter blocks npm when a Git marker cannot be verified as a worktree"
+    ],
+    "pass_to_pass": [
+      "tests/updater.test.ts::multi-phase update orchestration runs Git then npm and gates npm on safe Git completion",
+      "tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'skipped'",
+      "tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'failed'",
+      "tests/updater.test.ts::multi-phase update orchestration reports unmanaged Entries and isolates failures between Entries",
+      "tests/updater.test.ts::multi-phase update orchestration deduplicates phase mutation by manager and real path",
+      "tests/updater.test.ts::multi-phase update orchestration turns detection errors into local failures and continues",
+      "tests/updater.test.ts::system update adapter detects a Git root and root package.json as independent ordered phases",
+      "tests/updater.test.ts::system update adapter does not treat a monorepo subdirectory as a Git root",
+      "tests/updater.test.ts::system update adapter detects a non-Git root package.json as npm-only",
+      "tests/updater.test.ts::system update adapter keeps a Git phase when git is missing but a linked-worktree marker exists",
+      "tests/updater.test.ts::system update adapter blocks npm when git is missing and an Entry has a Git marker",
+      "tests/updater.test.ts::system update adapter executes npm update in the Entry root and reports npm JSON counts",
+      "tests/updater.test.ts::system update adapter maps successful npm output {\"added\":0,\"removed\":0,\"changed\":0} to up-to-date",
+      "tests/updater.test.ts::system update adapter maps successful npm output not json to updated",
+      "tests/updater.test.ts::system update adapter does not run npm if package.json disappeared",
+      "tests/updater.test.ts::system update adapter safely skips 'dirty' Git before pull",
+      "tests/updater.test.ts::system update adapter safely skips 'detached' Git before pull",
+      "tests/updater.test.ts::system update adapter safely skips 'no upstream' Git before pull",
+      "tests/updater.test.ts::system update adapter uses only pull --ff-only and compares HEAD around a safe Git update"
+    ]
+  },
+  "hud-status-metadata": {
+    "before_repo_set_cmd": "git reset --hard 6f5bf05071178eefbd746348c4715140cd3ed266 && git clean -fd -e node_modules/",
+    "selected_test_files_to_run": [
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts",
+      "packages/pi-worktree-hud/tests/state/model.test.ts",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts"
+    ],
+    "fail_to_pass": [
+      "packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows preserves submodule metadata on staged and changed rows",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders exact conflict XY codes and compact submodule markers"
+    ],
+    "pass_to_pass": [
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser streams branch headers and every supported record across arbitrary chunks",
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser represents detached and unborn branches",
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser accepts NUL-terminated headers emitted by status -z",
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser keeps unknown XY, but makes unknown and incomplete records non-writable",
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser caps record count without losing parsed records",
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser preserves every unmerged XY code and porcelain submodule field",
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts::NumstatParser streams text, binary, and renamed paths",
+      "packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows uses fixed sections, emits dual rows, and de-duplicates conflicts",
+      "packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows uses deterministic Unicode ordering and rename identity",
+      "packages/pi-worktree-hud/tests/state/model.test.ts::selection keeps row id, then nearest row in section, then next non-empty section",
+      "packages/pi-worktree-hud/tests/state/model.test.ts::selection returns a viewport centered around selection without dropping logical rows",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent maps every HUD semantic to a public Pi theme token",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders all width tiers without exceeding width",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent moves only file selection and maps public keys",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders a themed compact frame and hides zero-valued stats",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent keeps a clean Compact HUD framed with status and shortcut rows",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent styles deletions and hides the entire stats segment at zero",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent styles focused section titles and status codes but not paths",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent does not close focused mode for the global open shortcuts",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders selected row and footer inside the live max-line budget"
+    ]
+  },
+  "hud-hidden-locks": {
+    "before_repo_set_cmd": "git reset --hard 969d5ecbb11aac9baf042043eaa3ddb239506aa4 && git clean -fd -e node_modules/",
+    "selected_test_files_to_run": [
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts",
+      "packages/pi-worktree-hud/tests/runtime/session.test.ts"
+    ],
+    "fail_to_pass": [
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue keeps hidden agent work locked until a later successful refresh",
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue retains parallel tool locks until the final tool ends and refresh succeeds",
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue settles hidden agent lifecycle without leaving ghost tool locks",
+      "packages/pi-worktree-hud/tests/runtime/session.test.ts::SessionRuntime hidden agent lifecycle blocks staging when an edit starts while the HUD is hidden"
+    ],
+    "pass_to_pass": [
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue executes FIFO with a successful refresh between writes",
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue rejects during agent lock, pauses queued work, and resumes only after refresh",
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue skips stale all requests and invalid file requests",
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue stays locked after a failed agent refresh until a later success",
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue contains validation failures without rejecting the pump",
+      "packages/pi-worktree-hud/tests/runtime/session.test.ts::SessionRuntime hidden agent lifecycle clears settled hidden tool ids but keeps staging gated for refresh"
+    ]
+  }
+}

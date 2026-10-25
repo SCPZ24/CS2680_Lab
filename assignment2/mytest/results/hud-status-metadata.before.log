@@ -1,0 +1,102 @@
+TASK hud-status-metadata
+BASE 6f5bf05071178eefbd746348c4715140cd3ed266
+PATCH (baseline)
+HEAD is now at 6f5bf05 fix(hud): serialize startup and report discovery failures
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/app[39m
+
+ [31m❯[39m packages/pi-worktree-hud/tests/tui/hud.test.ts [2m([22m[2m10 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 23[2mms[22m[39m
+     [32m✓[39m maps every HUD semantic to a public Pi theme token[32m 1[2mms[22m[39m
+     [32m✓[39m renders all width tiers without exceeding width[32m 14[2mms[22m[39m
+     [32m✓[39m moves only file selection and maps public keys[32m 1[2mms[22m[39m
+     [32m✓[39m renders a themed compact frame and hides zero-valued stats[32m 1[2mms[22m[39m
+     [32m✓[39m keeps a clean Compact HUD framed with status and shortcut rows[32m 0[2mms[22m[39m
+     [32m✓[39m styles deletions and hides the entire stats segment at zero[32m 1[2mms[22m[39m
+     [32m✓[39m styles focused section titles and status codes but not paths[32m 1[2mms[22m[39m
+     [32m✓[39m does not close focused mode for the global open shortcuts[32m 0[2mms[22m[39m
+     [32m✓[39m renders selected row and footer inside the live max-line budget[32m 1[2mms[22m[39m
+[31m     [31m×[31m renders exact conflict XY codes and compact submodule markers[39m[32m 3[2mms[22m[39m
+ [32m✓[39m packages/pi-worktree-hud/tests/git/parsers.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 3[2mms[22m[39m
+ [31m❯[39m packages/pi-worktree-hud/tests/state/model.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 5[2mms[22m[39m
+     [32m✓[39m uses fixed sections, emits dual rows, and de-duplicates conflicts[32m 1[2mms[22m[39m
+     [32m✓[39m uses deterministic Unicode ordering and rename identity[32m 0[2mms[22m[39m
+[31m     [31m×[31m preserves submodule metadata on staged and changed rows[39m[32m 3[2mms[22m[39m
+     [32m✓[39m keeps row id, then nearest row in section, then next non-empty section[32m 0[2mms[22m[39m
+     [32m✓[39m returns a viewport centered around selection without dropping logical rows[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/pi-worktree-hud/tests/tui/hud.test.ts[2m > [22mHudComponent[2m > [22mrenders exact conflict XY codes and compact submodule markers
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m packages/pi-worktree-hud/tests/tui/hud.test.ts:[2m301:9[22m[39m
+    [90m299|[39m       [34mexpect[39m(
+    [90m300|[39m         lines.some((line) => line.includes(`${code} conflict-${code}`)…
+    [90m301|[39m       )[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   |[39m         [31m^[39m
+    [90m302|[39m     expect(lines.some((line) => line.includes("DD S conflict-DD"))).to…
+    [90m303|[39m     expect(lines.some((line) => line.includes("UU S conflict-UU"))).to…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/pi-worktree-hud/tests/state/model.test.ts[2m > [22msnapshot rows[2m > [22mpreserves submodule metadata on staged and changed rows
+[31m[1mAssertionError[22m: expected [ undefined, undefined ] to deeply equal [ 'S.M.', 'S.M.' ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[32m-   "S.M.",[39m
+[32m-   "S.M.",[39m
+[31m+   undefined,[39m
+[31m+   undefined,[39m
+[2m  ][22m
+
+[36m [2m❯[22m packages/pi-worktree-hud/tests/state/model.test.ts:[2m112:46[22m[39m
+    [90m110|[39m     })[33m.[39mrows[33m;[39m
+    [90m111|[39m     [34mexpect[39m(rows)[33m.[39m[34mtoHaveLength[39m([34m2[39m)[33m;[39m
+    [90m112|[39m     [34mexpect[39m(rows[33m.[39m[34mmap[39m((row) [33m=>[39m row[33m.[39msubmodule))[33m.[39m[34mtoEqual[39m([[32m"S.M."[39m[33m,[39m [32m"S.M."[39m])[33m;[39m
+    [90m   |[39m                                              [31m^[39m
+    [90m113|[39m   })[33m;[39m
+    [90m114|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (3)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m20 passed[39m[22m[90m (22)[39m
+[2m   Start at [22m 16:40:07
+[2m   Duration [22m 273ms[2m (transform 50ms, setup 0ms, import 94ms, tests 32ms, environment 0ms)[22m
+
+JSON report written to /eval-results/vitest.json
+PASSED packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser streams branch headers and every supported record across arbitrary chunks
+PASSED packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser represents detached and unborn branches
+PASSED packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser accepts NUL-terminated headers emitted by status -z
+PASSED packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser keeps unknown XY, but makes unknown and incomplete records non-writable
+PASSED packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser caps record count without losing parsed records
+PASSED packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser preserves every unmerged XY code and porcelain submodule field
+PASSED packages/pi-worktree-hud/tests/git/parsers.test.ts::NumstatParser streams text, binary, and renamed paths
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent maps every HUD semantic to a public Pi theme token
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders all width tiers without exceeding width
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent moves only file selection and maps public keys
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders a themed compact frame and hides zero-valued stats
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent keeps a clean Compact HUD framed with status and shortcut rows
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent styles deletions and hides the entire stats segment at zero
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent styles focused section titles and status codes but not paths
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent does not close focused mode for the global open shortcuts
+PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders selected row and footer inside the live max-line budget
+FAILED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders exact conflict XY codes and compact submodule markers
+PASSED packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows uses fixed sections, emits dual rows, and de-duplicates conflicts
+PASSED packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows uses deterministic Unicode ordering and rename identity
+FAILED packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows preserves submodule metadata on staged and changed rows
+PASSED packages/pi-worktree-hud/tests/state/model.test.ts::selection keeps row id, then nearest row in section, then next non-empty section
+PASSED packages/pi-worktree-hud/tests/state/model.test.ts::selection returns a viewport centered around selection without dropping logical rows
+REQUIRED_NOT_PASSED packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows preserves submodule metadata on staged and changed rows
+REQUIRED_NOT_PASSED packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders exact conflict XY codes and compact submodule markers
+unresolved hud-status-metadata

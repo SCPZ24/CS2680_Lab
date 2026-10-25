@@ -1,0 +1,43 @@
+diff --git a/packages/pi-worktree-hud/src/state/model.ts b/packages/pi-worktree-hud/src/state/model.ts
+index e1a5bf8..a0d419d 100644
+--- a/packages/pi-worktree-hud/src/state/model.ts
++++ b/packages/pi-worktree-hud/src/state/model.ts
+@@ -17,6 +17,7 @@ export interface HudRow {
+   indexStatus: string;
+   worktreeStatus: string;
+   conflict: boolean;
++  submodule?: string;
+   indexOid?: string;
+ }
+ 
+@@ -69,6 +70,7 @@ function row(section: Section, file: StatusFile): HudRow {
+     indexStatus: file.indexStatus,
+     worktreeStatus: file.worktreeStatus,
+     conflict: file.conflict,
++    submodule: file.submodule,
+     indexOid: file.indexOid,
+   };
+ }
+diff --git a/packages/pi-worktree-hud/src/tui/hud.ts b/packages/pi-worktree-hud/src/tui/hud.ts
+index f638a39..2fa3639 100644
+--- a/packages/pi-worktree-hud/src/tui/hud.ts
++++ b/packages/pi-worktree-hud/src/tui/hud.ts
+@@ -130,13 +130,16 @@ export class HudComponent implements Component, Focusable {
+         }
+         const selected = row.id === this.selectedId ? "›" : " ";
+         const status = row.conflict
+-          ? "UU"
++          ? `${row.indexStatus}${row.worktreeStatus}`
+           : row.section === "staged"
+             ? row.indexStatus
+             : row.worktreeStatus;
++        const submodule = row.submodule?.startsWith("S")
++          ? ` ${this.#options.styles.muted("S")}`
++          : "";
+         lines.push(
+           contentLine(
+-            `${selected} ${this.#options.styles.section[row.section](status)} ${this.#options.styles.text(row.label)}`,
++            `${selected} ${this.#options.styles.section[row.section](status)}${submodule} ${this.#options.styles.text(row.label)}`,
+             width,
+             border,
+           ),

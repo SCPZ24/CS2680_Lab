@@ -1,0 +1,11 @@
+{
+  "hud-hidden-locks": {
+    "instance_id": "hud-hidden-locks",
+    "repo": "z24-pi-extensions",
+    "base_commit": "969d5ecbb11aac9baf042043eaa3ddb239506aa4",
+    "docker_image": "cs2680-mytest/hud-hidden-locks:v1",
+    "problem_statement": "The worktree HUD can stage stale data when agent edit/write/bash activity starts or finishes while the HUD is hidden. Track mutating tool IDs while hidden as well as visible, block user mutations until every active tool ends and a subsequent refresh succeeds, and defer refresh while hidden until the HUD is shown again. Clearing settled tool IDs must not leave ghost locks or remove the pending-refresh gate. Preserve ordinary mutation queue behavior and reject mutations after disposal. For the queue interface, expose agentRefreshPending, support unlockAgent(id, refreshNow=true) and clearAgentLocks(refreshNow=true), and provide requestAgentRefresh() for resuming deferred refresh; false means mark refresh pending without starting it. SessionRuntime must use this lifecycle consistently across hide/show, tool completion and agent completion.",
+    "requirements": "",
+    "interface": ""
+  }
+}

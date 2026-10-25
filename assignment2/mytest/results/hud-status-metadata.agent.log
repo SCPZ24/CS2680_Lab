@@ -1,0 +1,122 @@
+== task 2: hud-status-metadata
+== image: cs2680-mytest/hud-status-metadata:v1
+Error response from daemon: failed to resolve reference "docker.io/cs2680-mytest/hud-status-metadata:v1": failed to do request: Head "https://docker.mirrors.ustc.edu.cn/v2/cs2680-mytest/hud-status-metadata/manifests/v1?ns=docker.io": EOF
+== using local image cs2680-mytest/hud-status-metadata:v1
+== agent logs (written live): /tmp/madsloop-mytest.ZkyZ4d/madsLoop_logs/hud-status-metadata
+== harness Python cache: madsloop-python-d84d26aac427db1385bf3f08df8d8a00b85668780fed5521a01216912640ec54
+== workdir in container: /app
+== harness interpreter: /opt/harness/bin/python3.11 (Python 3.11.2)
+== starting agent (progress on stderr; JSONL logs saved live)
+[2026-10-25T16:40:41+00:00] Run started: model=qwen/qwen3.6-35b-a3b, workdir=/app
+[2026-10-25T16:40:41+00:00] Iteration 1: API attempt 1/7, messages=2; waiting for response
+[2026-10-25T16:40:45+00:00] Iteration 1: API response received; input_tokens=1622, output_tokens=195, total_tokens=1817
+[2026-10-25T16:40:45+00:00] Iteration 1: tool glob started
+[2026-10-25T16:40:46+00:00] Iteration 1: tool glob finished; is_error=False, result_chars=3811
+[2026-10-25T16:40:46+00:00] Iteration 2: API attempt 1/7, messages=4; waiting for response
+[2026-10-25T16:40:50+00:00] Iteration 2: API response received; input_tokens=2882, output_tokens=140, total_tokens=3022
+[2026-10-25T16:40:50+00:00] Iteration 2: tool read_file started
+[2026-10-25T16:40:50+00:00] Iteration 2: tool read_file finished; is_error=False, result_chars=10138
+[2026-10-25T16:40:50+00:00] Iteration 2: tool read_file started
+[2026-10-25T16:40:50+00:00] Iteration 2: tool read_file finished; is_error=False, result_chars=8459
+[2026-10-25T16:40:50+00:00] Iteration 2: tool read_file started
+[2026-10-25T16:40:50+00:00] Iteration 2: tool read_file finished; is_error=False, result_chars=6524
+[2026-10-25T16:40:50+00:00] Iteration 3: API attempt 1/7, messages=8; waiting for response
+[2026-10-25T16:40:56+00:00] Iteration 3: API response received; input_tokens=12544, output_tokens=771, total_tokens=13315
+[2026-10-25T16:40:56+00:00] Iteration 3: tool read_file started
+[2026-10-25T16:40:56+00:00] Iteration 3: tool read_file finished; is_error=False, result_chars=955
+[2026-10-25T16:40:56+00:00] Iteration 3: tool read_file started
+[2026-10-25T16:40:56+00:00] Iteration 3: tool read_file finished; is_error=False, result_chars=9228
+[2026-10-25T16:40:56+00:00] Iteration 3: tool read_file started
+[2026-10-25T16:40:56+00:00] Iteration 3: tool read_file finished; is_error=False, result_chars=4859
+[2026-10-25T16:40:56+00:00] Iteration 4: API attempt 1/7, messages=12; waiting for response
+[2026-10-25T16:40:58+00:00] Iteration 4: API response received; input_tokens=19226, output_tokens=69, total_tokens=19295
+[2026-10-25T16:40:58+00:00] Iteration 4: tool read_file started
+[2026-10-25T16:40:58+00:00] Iteration 4: tool read_file finished; is_error=False, result_chars=5308
+[2026-10-25T16:40:58+00:00] Iteration 5: API attempt 1/7, messages=14; waiting for response
+[2026-10-25T16:41:07+00:00] Iteration 5: API response received; input_tokens=21435, output_tokens=551, total_tokens=21986
+[2026-10-25T16:41:07+00:00] Iteration 5: tool read_file started
+[2026-10-25T16:41:07+00:00] Iteration 5: tool read_file finished; is_error=False, result_chars=11940
+[2026-10-25T16:41:07+00:00] Iteration 5: tool read_file started
+[2026-10-25T16:41:07+00:00] Iteration 5: tool read_file finished; is_error=False, result_chars=9462
+[2026-10-25T16:41:07+00:00] Iteration 6: API attempt 1/7, messages=17; waiting for response
+[2026-10-25T16:41:08+00:00] Iteration 6: API response received; input_tokens=31029, output_tokens=64, total_tokens=31093
+[2026-10-25T16:41:08+00:00] Iteration 6: tool read_file started
+[2026-10-25T16:41:08+00:00] Iteration 6: tool read_file finished; is_error=False, result_chars=9228
+[2026-10-25T16:41:08+00:00] Iteration 7: API attempt 1/7, messages=19; waiting for response
+[2026-10-25T16:41:11+00:00] Iteration 7: API response received; input_tokens=34674, output_tokens=138, total_tokens=34812
+[2026-10-25T16:41:11+00:00] Iteration 7: tool read_file started
+[2026-10-25T16:41:11+00:00] Iteration 7: tool read_file finished; is_error=False, result_chars=5049
+[2026-10-25T16:41:11+00:00] Iteration 7: tool read_file started
+[2026-10-25T16:41:11+00:00] Iteration 7: tool read_file finished; is_error=False, result_chars=6479
+[2026-10-25T16:41:11+00:00] Iteration 8: API attempt 1/7, messages=22; waiting for response
+[2026-10-25T16:41:13+00:00] Iteration 8: API response received; input_tokens=38053, output_tokens=71, total_tokens=38124
+[2026-10-25T16:41:13+00:00] Iteration 8: tool read_file started
+[2026-10-25T16:41:13+00:00] Iteration 8: tool read_file finished; is_error=False, result_chars=11657
+[2026-10-25T16:41:13+00:00] Iteration 9: API attempt 1/7, messages=24; waiting for response
+[2026-10-25T16:41:18+00:00] Iteration 9: API response received; input_tokens=41311, output_tokens=595, total_tokens=41906
+[2026-10-25T16:41:18+00:00] Iteration 9: tool patch_edit started
+[2026-10-25T16:41:18+00:00] Iteration 9: tool patch_edit finished; is_error=True, result_chars=86
+[2026-10-25T16:41:18+00:00] Iteration 10: API attempt 1/7, messages=26; waiting for response
+[2026-10-25T16:41:20+00:00] Iteration 10: API response received; input_tokens=41965, output_tokens=224, total_tokens=42189
+[2026-10-25T16:41:20+00:00] Iteration 10: tool edit_file started
+[2026-10-25T16:41:20+00:00] Iteration 10: tool edit_file finished; is_error=False, result_chars=51
+[2026-10-25T16:41:20+00:00] Iteration 11: API attempt 1/7, messages=28; waiting for response
+[2026-10-25T16:41:26+00:00] Iteration 11: API response received; input_tokens=42216, output_tokens=348, total_tokens=42564
+[2026-10-25T16:41:26+00:00] Iteration 11: tool edit_file started
+[2026-10-25T16:41:26+00:00] Iteration 11: tool edit_file finished; is_error=False, result_chars=51
+[2026-10-25T16:41:26+00:00] Iteration 12: API attempt 1/7, messages=30; waiting for response
+[2026-10-25T16:41:37+00:00] Iteration 12: API response received; input_tokens=42591, output_tokens=597, total_tokens=43188
+[2026-10-25T16:41:37+00:00] Iteration 12: tool edit_file started
+[2026-10-25T16:41:37+00:00] Iteration 12: tool edit_file finished; is_error=False, result_chars=47
+[2026-10-25T16:41:37+00:00] Iteration 13: API attempt 1/7, messages=32; waiting for response
+[2026-10-25T16:41:39+00:00] Iteration 13: API response received; input_tokens=43217, output_tokens=73, total_tokens=43290
+[2026-10-25T16:41:39+00:00] Iteration 13: tool bash started
+[2026-10-25T16:41:40+00:00] Iteration 13: tool bash finished; is_error=False, result_chars=1960
+[2026-10-25T16:41:40+00:00] Iteration 14: API attempt 1/7, messages=34; waiting for response
+[2026-10-25T16:41:47+00:00] Iteration 14: API response received; input_tokens=44480, output_tokens=162, total_tokens=44642
+[2026-10-25T16:41:47+00:00] Iteration 14: tool read_file started
+[2026-10-25T16:41:47+00:00] Iteration 14: tool read_file finished; is_error=False, result_chars=2389
+[2026-10-25T16:41:47+00:00] Iteration 14: tool read_file started
+[2026-10-25T16:41:47+00:00] Iteration 14: tool read_file finished; is_error=False, result_chars=1789
+[2026-10-25T16:41:47+00:00] Iteration 15: API attempt 1/7, messages=37; waiting for response
+[2026-10-25T16:41:50+00:00] Iteration 15: API response received; input_tokens=46205, output_tokens=79, total_tokens=46284
+[2026-10-25T16:41:50+00:00] Iteration 15: tool bash started
+[2026-10-25T16:41:50+00:00] Iteration 15: tool bash finished; is_error=False, result_chars=1353
+[2026-10-25T16:41:50+00:00] Iteration 16: API attempt 1/7, messages=39; waiting for response
+[2026-10-25T16:41:54+00:00] Iteration 16: API response received; input_tokens=46726, output_tokens=379, total_tokens=47105
+[2026-10-25T16:41:54+00:00] Iteration 16: tool edit_file started
+[2026-10-25T16:41:54+00:00] Iteration 16: tool edit_file finished; is_error=False, result_chars=47
+[2026-10-25T16:41:54+00:00] Iteration 17: API attempt 1/7, messages=41; waiting for response
+[2026-10-25T16:41:55+00:00] Iteration 17: API response received; input_tokens=47134, output_tokens=48, total_tokens=47182
+[2026-10-25T16:41:55+00:00] Iteration 17: tool bash started
+[2026-10-25T16:41:57+00:00] Iteration 17: tool bash finished; is_error=False, result_chars=12000
+[2026-10-25T16:41:57+00:00] Iteration 18: API attempt 1/7, messages=43; waiting for response
+[2026-10-25T16:41:58+00:00] Iteration 18: API response received; input_tokens=51205, output_tokens=71, total_tokens=51276
+[2026-10-25T16:41:58+00:00] Iteration 18: tool bash started
+[2026-10-25T16:42:00+00:00] Iteration 18: tool bash finished; is_error=False, result_chars=707
+[2026-10-25T16:42:00+00:00] Iteration 19: API attempt 1/7, messages=45; waiting for response
+[2026-10-25T16:42:09+00:00] Iteration 19: API response received; input_tokens=51667, output_tokens=595, total_tokens=52262
+[2026-10-25T16:42:09+00:00] Iteration 19: tool done started
+[2026-10-25T16:42:09+00:00] Iteration 19: tool done finished; is_error=False, result_chars=973
+[2026-10-25T16:42:09+00:00] Run ended: reason=done, iterations=19
+== patch written to model_patch_hud-status-metadata.diff
+diff --git a/packages/pi-worktree-hud/src/state/model.ts b/packages/pi-worktree-hud/src/state/model.ts
+index e1a5bf8..174cb18 100644
+--- a/packages/pi-worktree-hud/src/state/model.ts
++++ b/packages/pi-worktree-hud/src/state/model.ts
+@@ -18,6 +18,7 @@ export interface HudRow {
+   worktreeStatus: string;
+   conflict: boolean;
+   indexOid?: string;
++  submodule?: string;
+ }
+ 
+ export interface WorktreeSnapshot {
+@@ -70,6 +71,7 @@ function row(section: Section, file: StatusFile): HudRow {
+     worktreeStatus: file.worktreeStatus,
+     conflict: file.conflict,
+     indexOid: file.indexOid,
++    submodule: file.submodule,
+   };
+ }
+ 

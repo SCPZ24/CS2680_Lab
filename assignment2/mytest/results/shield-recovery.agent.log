@@ -1,0 +1,80 @@
+== task 0: shield-recovery
+== image: cs2680-mytest/shield-recovery:v1
+Error response from daemon: failed to resolve reference "docker.io/cs2680-mytest/shield-recovery:v1": failed to do request: Head "https://docker.mirrors.ustc.edu.cn/v2/cs2680-mytest/shield-recovery/manifests/v1?ns=docker.io": EOF
+== using local image cs2680-mytest/shield-recovery:v1
+== agent logs (written live): /tmp/madsloop-mytest.aSengm/madsLoop_logs/shield-recovery
+== harness Python cache: madsloop-python-d987e6ed94d3c7e8592b0746e2beae6b4d2493d4bbd543d5686714ec3d1aa803
+== workdir in container: /app
+== harness interpreter: /opt/harness/bin/python3.11 (Python 3.11.2)
+== starting agent (progress on stderr; JSONL logs saved live)
+[2026-10-25T16:40:02+00:00] Run started: model=qwen/qwen3.6-35b-a3b, workdir=/app
+[2026-10-25T16:40:02+00:00] Iteration 1: API attempt 1/7, messages=2; waiting for response
+[2026-10-25T16:40:04+00:00] Iteration 1: API response received; input_tokens=1502, output_tokens=110, total_tokens=1612
+[2026-10-25T16:40:04+00:00] Iteration 1: tool glob started
+[2026-10-25T16:40:04+00:00] Iteration 1: tool glob finished; is_error=False, result_chars=17
+[2026-10-25T16:40:04+00:00] Iteration 1: tool glob started
+[2026-10-25T16:40:04+00:00] Iteration 1: tool glob finished; is_error=False, result_chars=193
+[2026-10-25T16:40:04+00:00] Iteration 1: tool glob started
+[2026-10-25T16:40:04+00:00] Iteration 1: tool glob finished; is_error=False, result_chars=17
+[2026-10-25T16:40:04+00:00] Iteration 2: API attempt 1/7, messages=6; waiting for response
+[2026-10-25T16:40:05+00:00] Iteration 2: API response received; input_tokens=1697, output_tokens=126, total_tokens=1823
+[2026-10-25T16:40:05+00:00] Iteration 2: tool read_file started
+[2026-10-25T16:40:05+00:00] Iteration 2: tool read_file finished; is_error=False, result_chars=1777
+[2026-10-25T16:40:05+00:00] Iteration 2: tool read_file started
+[2026-10-25T16:40:05+00:00] Iteration 2: tool read_file finished; is_error=False, result_chars=368
+[2026-10-25T16:40:05+00:00] Iteration 2: tool read_file started
+[2026-10-25T16:40:05+00:00] Iteration 2: tool read_file finished; is_error=False, result_chars=2403
+[2026-10-25T16:40:05+00:00] Iteration 3: API attempt 1/7, messages=10; waiting for response
+[2026-10-25T16:40:28+00:00] Iteration 3: API response received; input_tokens=3633, output_tokens=4019, total_tokens=7652
+[2026-10-25T16:40:28+00:00] Iteration 3: tool read_file started
+[2026-10-25T16:40:28+00:00] Iteration 3: tool read_file finished; is_error=False, result_chars=1777
+[2026-10-25T16:40:28+00:00] Iteration 3: tool read_file started
+[2026-10-25T16:40:28+00:00] Iteration 3: tool read_file finished; is_error=False, result_chars=368
+[2026-10-25T16:40:28+00:00] Iteration 4: API attempt 1/7, messages=13; waiting for response
+[2026-10-25T16:40:33+00:00] Iteration 4: API response received; input_tokens=8518, output_tokens=786, total_tokens=9304
+[2026-10-25T16:40:33+00:00] Iteration 4: tool edit_file started
+[2026-10-25T16:40:33+00:00] Iteration 4: tool edit_file finished; is_error=False, result_chars=36
+[2026-10-25T16:40:33+00:00] Iteration 5: API attempt 1/7, messages=15; waiting for response
+[2026-10-25T16:40:36+00:00] Iteration 5: API response received; input_tokens=9328, output_tokens=300, total_tokens=9628
+[2026-10-25T16:40:36+00:00] Iteration 5: tool edit_file started
+[2026-10-25T16:40:36+00:00] Iteration 5: tool edit_file finished; is_error=False, result_chars=42
+[2026-10-25T16:40:36+00:00] Iteration 6: API attempt 1/7, messages=17; waiting for response
+[2026-10-25T16:40:39+00:00] Iteration 6: API response received; input_tokens=9653, output_tokens=410, total_tokens=10063
+[2026-10-25T16:40:39+00:00] Iteration 6: tool edit_file started
+[2026-10-25T16:40:39+00:00] Iteration 6: tool edit_file finished; is_error=False, result_chars=42
+[2026-10-25T16:40:39+00:00] Iteration 7: API attempt 1/7, messages=19; waiting for response
+[2026-10-25T16:40:40+00:00] Iteration 7: API response received; input_tokens=10088, output_tokens=59, total_tokens=10147
+[2026-10-25T16:40:40+00:00] Iteration 7: tool bash started
+[2026-10-25T16:40:41+00:00] Iteration 7: tool bash finished; is_error=False, result_chars=366
+[2026-10-25T16:40:41+00:00] Iteration 8: API attempt 1/7, messages=21; waiting for response
+[2026-10-25T16:40:42+00:00] Iteration 8: API response received; input_tokens=10315, output_tokens=98, total_tokens=10413
+[2026-10-25T16:40:42+00:00] Iteration 8: tool read_file started
+[2026-10-25T16:40:42+00:00] Iteration 8: tool read_file finished; is_error=False, result_chars=2013
+[2026-10-25T16:40:42+00:00] Iteration 8: tool read_file started
+[2026-10-25T16:40:42+00:00] Iteration 8: tool read_file finished; is_error=False, result_chars=505
+[2026-10-25T16:40:42+00:00] Iteration 9: API attempt 1/7, messages=24; waiting for response
+[2026-10-25T16:40:46+00:00] Iteration 9: API response received; input_tokens=11399, output_tokens=585, total_tokens=11984
+[2026-10-25T16:40:46+00:00] Iteration 9: tool done started
+[2026-10-25T16:40:46+00:00] Iteration 9: tool done finished; is_error=False, result_chars=1046
+[2026-10-25T16:40:46+00:00] Run ended: reason=done, iterations=9
+== patch written to model_patch_shield-recovery.diff
+diff --git a/src/game/state/playerState.ts b/src/game/state/playerState.ts
+index f3a220b..0e52e6a 100644
+--- a/src/game/state/playerState.ts
++++ b/src/game/state/playerState.ts
+@@ -8,7 +8,8 @@ export function createInitialPlayerState(): PlayerState {
+     shield: 60,
+     lastDamageAt: -Infinity,
+     shieldRecoveryDelayMs: 1000,
+-    shieldRecoveryPerSecond: 18
++    shieldRecoveryPerSecond: 18,
++    elapsedRecoveryTime: 0
+   };
+ }
+ 
+@@ -35,7 +36,10 @@ export function tickShieldRecovery(player: PlayerState, timestamp: number): Play
+   const eligibleAt = player.lastDamageAt + player.shieldRecoveryDelayMs;
+   if (timestamp < eligibleAt) return player;
+ 
+-  const deltaSeconds = (timestamp - eligibleAt) / 1000;
++  const totalElapsed = (timestamp - eligibleAt) / 1000;

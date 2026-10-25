@@ -1,0 +1,34 @@
+{
+  "instance_id": "hud-status-metadata",
+  "patch": null,
+  "resolved": false,
+  "exit_code": 1,
+  "tests": {
+    "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser streams branch headers and every supported record across arbitrary chunks": "passed",
+    "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser represents detached and unborn branches": "passed",
+    "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser accepts NUL-terminated headers emitted by status -z": "passed",
+    "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser keeps unknown XY, but makes unknown and incomplete records non-writable": "passed",
+    "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser caps record count without losing parsed records": "passed",
+    "packages/pi-worktree-hud/tests/git/parsers.test.ts::PorcelainV2Parser preserves every unmerged XY code and porcelain submodule field": "passed",
+    "packages/pi-worktree-hud/tests/git/parsers.test.ts::NumstatParser streams text, binary, and renamed paths": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent maps every HUD semantic to a public Pi theme token": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders all width tiers without exceeding width": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent moves only file selection and maps public keys": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders a themed compact frame and hides zero-valued stats": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent keeps a clean Compact HUD framed with status and shortcut rows": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent styles deletions and hides the entire stats segment at zero": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent styles focused section titles and status codes but not paths": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent does not close focused mode for the global open shortcuts": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders selected row and footer inside the live max-line budget": "passed",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders exact conflict XY codes and compact submodule markers": "failed",
+    "packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows uses fixed sections, emits dual rows, and de-duplicates conflicts": "passed",
+    "packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows uses deterministic Unicode ordering and rename identity": "passed",
+    "packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows preserves submodule metadata on staged and changed rows": "failed",
+    "packages/pi-worktree-hud/tests/state/model.test.ts::selection keeps row id, then nearest row in section, then next non-empty section": "passed",
+    "packages/pi-worktree-hud/tests/state/model.test.ts::selection returns a viewport centered around selection without dropping logical rows": "passed"
+  },
+  "missing_or_failed": [
+    "packages/pi-worktree-hud/tests/state/model.test.ts::snapshot rows preserves submodule metadata on staged and changed rows",
+    "packages/pi-worktree-hud/tests/tui/hud.test.ts::HudComponent renders exact conflict XY codes and compact submodule markers"
+  ]
+}

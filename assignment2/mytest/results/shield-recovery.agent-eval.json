@@ -1,0 +1,18 @@
+{
+  "instance_id": "shield-recovery",
+  "patch": "assignment2/mytest/results/shield-recovery.agent.diff",
+  "resolved": false,
+  "exit_code": 1,
+  "tests": {
+    "src/game/state/playerState.test.ts::playerState survival rules createInitialPlayerState returns expected defaults": "passed",
+    "src/game/state/playerState.test.ts::playerState survival rules routes incoming damage to shield before health": "passed",
+    "src/game/state/playerState.test.ts::playerState survival rules overflow damage spills from shield to health": "passed",
+    "src/game/state/playerState.test.ts::playerState survival rules starts shield recovery only after the recovery delay": "passed",
+    "src/game/state/playerState.test.ts::playerState survival rules shield recovery is linear across multiple ticks (no double-counting)": "passed",
+    "src/game/state/playerState.test.ts::playerState survival rules heals health with pickups without exceeding max health": "passed",
+    "src/game/state/playerState.test.ts::playerState survival rules applyDamage does not update lastDamageAt when effective damage is <= 0": "failed"
+  },
+  "missing_or_failed": [
+    "src/game/state/playerState.test.ts::playerState survival rules applyDamage does not update lastDamageAt when effective damage is <= 0"
+  ]
+}

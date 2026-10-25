@@ -1,0 +1,38 @@
+{
+  "shield-recovery": {
+    "instance_id": "shield-recovery",
+    "repo": "CodexPlayground",
+    "base_commit": "11c19baf6760c2c56d5dee3fa161b5b8e66f86d9",
+    "docker_image": "cs2680-mytest/shield-recovery:v1",
+    "problem_statement": "Shield recovery depends on how often tickShieldRecovery is called: repeated updates count elapsed time more than once. Fix player survival state so recovery starts only after shieldRecoveryDelayMs and integrates shieldRecoveryPerSecond over elapsed time not already accounted for; repeated timestamps must not add recovery, and shield must never exceed maxShield. Zero or negative damage must not reset lastDamageAt or the recovery waiting period. Preserve normal shield-first damage, health clamping and healing behavior.",
+    "requirements": "",
+    "interface": ""
+  },
+  "piw-safe-update": {
+    "instance_id": "piw-safe-update",
+    "repo": "piw",
+    "base_commit": "04a20fdd5ea3b5ad700e451aa4726f8fae78f96b",
+    "docker_image": "cs2680-mytest/piw-safe-update:v1",
+    "problem_statement": "The updater may run npm update on an Entry containing a .git marker and package.json even when Git cannot verify the worktree. Fix Git detection and update orchestration so a failed rev-parse or an unresolvable reported root retains a failed Git phase with reason \"could not verify Git worktree\", and prevents the subsequent npm phase with reason \"git phase did not complete safely\". If Git is unavailable but a marker exists, retain the skipped Git phase and likewise skip npm. Preserve successful Git-then-npm updates, ordinary non-Git npm projects, monorepo subdirectory handling, deduplication and isolation between Entries. Do not run real package updates in tests; the command adapter is injectable.",
+    "requirements": "",
+    "interface": ""
+  },
+  "hud-status-metadata": {
+    "instance_id": "hud-status-metadata",
+    "repo": "z24-pi-extensions",
+    "base_commit": "6f5bf05071178eefbd746348c4715140cd3ed266",
+    "docker_image": "cs2680-mytest/hud-status-metadata:v1",
+    "problem_statement": "The worktree HUD displays every unmerged file as UU and loses submodule information between Git parsing and display. Preserve the exact porcelain XY conflict codes DD, AU, UD, UA, DU, AA and UU through snapshots and rendering. Carry the porcelain submodule field on both staged and changed HudRows; when it starts with S, render a compact S marker between the status and path, but do not mark ordinary N... records. Preserve existing selection, staged/changed grouping, rename labels, theming and terminal width limits.",
+    "requirements": "",
+    "interface": ""
+  },
+  "hud-hidden-locks": {
+    "instance_id": "hud-hidden-locks",
+    "repo": "z24-pi-extensions",
+    "base_commit": "969d5ecbb11aac9baf042043eaa3ddb239506aa4",
+    "docker_image": "cs2680-mytest/hud-hidden-locks:v1",
+    "problem_statement": "The worktree HUD can stage stale data when agent edit/write/bash activity starts or finishes while the HUD is hidden. Track mutating tool IDs while hidden as well as visible, block user mutations until every active tool ends and a subsequent refresh succeeds, and defer refresh while hidden until the HUD is shown again. Clearing settled tool IDs must not leave ghost locks or remove the pending-refresh gate. Preserve ordinary mutation queue behavior and reject mutations after disposal. For the queue interface, expose agentRefreshPending, support unlockAgent(id, refreshNow=true) and clearAgentLocks(refreshNow=true), and provide requestAgentRefresh() for resuming deferred refresh; false means mark refresh pending without starting it. SessionRuntime must use this lifecycle consistently across hide/show, tool completion and agent completion.",
+    "requirements": "",
+    "interface": ""
+  }
+}

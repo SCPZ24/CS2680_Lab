@@ -1,0 +1,36 @@
+TASK piw-safe-update
+BASE 04a20fdd5ea3b5ad700e451aa4726f8fae78f96b
+PATCH /Users/zytwd/Code/Labs/CS2680_Lab/assignment2/mytest/tasks/piw-safe-update/gold.diff
+HEAD is now at 04a20fd 需求修复：修改entry存放位置。
+
+ RUN  v3.2.7 /app
+
+ ✓ tests/updater.test.ts (20 tests) 8ms
+
+ Test Files  1 passed (1)
+      Tests  20 passed (20)
+   Start at  16:38:52
+   Duration  144ms (transform 43ms, setup 0ms, collect 56ms, tests 8ms, environment 0ms, prepare 24ms)
+
+JSON report written to /eval-results/vitest.json
+PASSED tests/updater.test.ts::multi-phase update orchestration runs Git then npm and gates npm on safe Git completion
+PASSED tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'skipped'
+PASSED tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'failed'
+PASSED tests/updater.test.ts::multi-phase update orchestration reports unmanaged Entries and isolates failures between Entries
+PASSED tests/updater.test.ts::multi-phase update orchestration deduplicates phase mutation by manager and real path
+PASSED tests/updater.test.ts::multi-phase update orchestration turns detection errors into local failures and continues
+PASSED tests/updater.test.ts::system update adapter detects a Git root and root package.json as independent ordered phases
+PASSED tests/updater.test.ts::system update adapter does not treat a monorepo subdirectory as a Git root
+PASSED tests/updater.test.ts::system update adapter detects a non-Git root package.json as npm-only
+PASSED tests/updater.test.ts::system update adapter keeps a Git phase when git is missing but a linked-worktree marker exists
+PASSED tests/updater.test.ts::system update adapter blocks npm when a Git marker cannot be verified as a worktree
+PASSED tests/updater.test.ts::system update adapter blocks npm when git is missing and an Entry has a Git marker
+PASSED tests/updater.test.ts::system update adapter executes npm update in the Entry root and reports npm JSON counts
+PASSED tests/updater.test.ts::system update adapter maps successful npm output {"added":0,"removed":0,"changed":0} to up-to-date
+PASSED tests/updater.test.ts::system update adapter maps successful npm output not json to updated
+PASSED tests/updater.test.ts::system update adapter does not run npm if package.json disappeared
+PASSED tests/updater.test.ts::system update adapter safely skips 'dirty' Git before pull
+PASSED tests/updater.test.ts::system update adapter safely skips 'detached' Git before pull
+PASSED tests/updater.test.ts::system update adapter safely skips 'no upstream' Git before pull
+PASSED tests/updater.test.ts::system update adapter uses only pull --ff-only and compares HEAD around a safe Git update
+RESOLVED piw-safe-update

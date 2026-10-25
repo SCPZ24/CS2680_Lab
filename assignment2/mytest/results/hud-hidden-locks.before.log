@@ -1,0 +1,127 @@
+TASK hud-hidden-locks
+BASE 969d5ecbb11aac9baf042043eaa3ddb239506aa4
+PATCH (baseline)
+HEAD is now at 969d5ec fix(hud): size diff previews to the live viewport
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/app[39m
+
+ [31m❯[39m packages/pi-worktree-hud/tests/runtime/mutations.test.ts [2m([22m[2m8 tests[22m[2m | [22m[31m3 failed[39m[2m)[22m[32m 6[2mms[22m[39m
+     [32m✓[39m executes FIFO with a successful refresh between writes[32m 1[2mms[22m[39m
+     [32m✓[39m rejects during agent lock, pauses queued work, and resumes only after refresh[32m 1[2mms[22m[39m
+     [32m✓[39m skips stale all requests and invalid file requests[32m 0[2mms[22m[39m
+     [32m✓[39m stays locked after a failed agent refresh until a later success[32m 0[2mms[22m[39m
+     [32m✓[39m contains validation failures without rejecting the pump[32m 0[2mms[22m[39m
+[31m     [31m×[31m keeps hidden agent work locked until a later successful refresh[39m[32m 2[2mms[22m[39m
+[31m     [31m×[31m retains parallel tool locks until the final tool ends and refresh succeeds[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m settles hidden agent lifecycle without leaving ghost tool locks[39m[32m 0[2mms[22m[39m
+ [31m❯[39m packages/pi-worktree-hud/tests/runtime/session.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 22[2mms[22m[39m
+[31m     [31m×[31m blocks staging when an edit starts while the HUD is hidden[39m[32m 15[2mms[22m[39m
+     [32m✓[39m clears settled hidden tool ids but keeps staging gated for refresh[32m 6[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/pi-worktree-hud/tests/runtime/mutations.test.ts[2m > [22mMutationQueue[2m > [22mkeeps hidden agent work locked until a later successful refresh
+[31m[1mAssertionError[22m: expected "vi.fn()" to not be called at all, but actually been called 1 times[90m
+
+Received:
+
+[1m  1st vi.fn() call:
+
+[22m    Array []
+[31m[90m
+
+Number of calls: [1m1[22m
+[31m[39m
+[36m [2m❯[22m packages/pi-worktree-hud/tests/runtime/mutations.test.ts:[2m164:25[22m[39m
+    [90m162|[39m     queue[33m.[39m[34munlockAgent[39m([32m"hidden-write"[39m[33m,[39m [35mfalse[39m)[33m;[39m
+    [90m163|[39m
+    [90m164|[39m     [34mexpect[39m(refresh)[33m.[39mnot[33m.[39m[34mtoHaveBeenCalled[39m()[33m;[39m
+    [90m   |[39m                         [31m^[39m
+    [90m165|[39m     [34mexpect[39m(queue[33m.[39magentRefreshPending)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m166|[39m     [34mexpect[39m(
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/pi-worktree-hud/tests/runtime/mutations.test.ts[2m > [22mMutationQueue[2m > [22mretains parallel tool locks until the final tool ends and refresh succeeds
+[31m[1mAssertionError[22m: expected undefined to be true // Object.is equality[39m
+
+[32m- Expected:[39m
+true
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m packages/pi-worktree-hud/tests/runtime/mutations.test.ts:[2m199:39[22m[39m
+    [90m197|[39m     queue[33m.[39m[34munlockAgent[39m([32m"bash-b"[39m)[33m;[39m
+    [90m198|[39m     [34mexpect[39m(queue[33m.[39magentLockCount)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m199|[39m     [34mexpect[39m(queue[33m.[39magentRefreshPending)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   |[39m                                       [31m^[39m
+    [90m200|[39m     [34mexpect[39m(
+    [90m201|[39m       queue.enqueue({ id: "blocked", kind: "stage-all", generation: 1 …
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/pi-worktree-hud/tests/runtime/mutations.test.ts[2m > [22mMutationQueue[2m > [22msettles hidden agent lifecycle without leaving ghost tool locks
+[31m[1mAssertionError[22m: expected undefined to be true // Object.is equality[39m
+
+[32m- Expected:[39m
+true
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m packages/pi-worktree-hud/tests/runtime/mutations.test.ts:[2m218:39[22m[39m
+    [90m216|[39m     queue[33m.[39m[34mclearAgentLocks[39m([35mfalse[39m)[33m;[39m
+    [90m217|[39m     [34mexpect[39m(queue[33m.[39magentLockCount)[33m.[39m[34mtoBe[39m([34m0[39m)[33m;[39m
+    [90m218|[39m     [34mexpect[39m(queue[33m.[39magentRefreshPending)[33m.[39m[34mtoBe[39m([35mtrue[39m)[33m;[39m
+    [90m   |[39m                                       [31m^[39m
+    [90m219|[39m   })[33m;[39m
+    [90m220|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/pi-worktree-hud/tests/runtime/session.test.ts[2m > [22mSessionRuntime hidden agent lifecycle[2m > [22mblocks staging when an edit starts while the HUD is hidden
+[31m[1mAssertionError[22m: expected '╭ Worktree · unborn ─────────────────…' to contain 'Agent mutation lock (1)'[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- Agent mutation lock (1)[39m
+[31m+ ╭ Worktree · unborn ───────────────────────────────╮[39m
+[31m+ │ 1 files                                          │[39m
+[31m+ │ Untracked 1                                      │[39m
+[31m+ │ › ? changed.txt                                  │[39m
+[31m+ ╰ Refreshing… ─────────────────────────────────────╯[39m
+
+[36m [2m❯[22m packages/pi-worktree-hud/tests/runtime/session.test.ts:[2m96:19[22m[39m
+    [90m 94|[39m     [35mconst[39m focused [33m=[39m components[33m.[39m[34mat[39m([33m-[39m[34m1[39m)[33m;[39m
+    [90m 95|[39m     [35mconst[39m frame [33m=[39m focused[33m?.[39m[34mrender[39m([34m52[39m)[33m.[39m[34mjoin[39m([32m"\n"[39m) [33m??[39m [32m""[39m[33m;[39m
+    [90m 96|[39m     [34mexpect[39m(frame)[33m.[39m[34mtoContain[39m([32m"Agent mutation lock (1)"[39m)[33m;[39m
+    [90m   |[39m                   [31m^[39m
+    [90m 97|[39m     focused[33m?.[39m[34mhandleInput[39m[33m?.[39m([32m" "[39m)[33m;[39m
+    [90m 98|[39m     [35mawait[39m [33mPromise[39m[33m.[39m[34mresolve[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m2 failed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 16:40:09
+[2m   Duration [22m 246ms[2m (transform 67ms, setup 0ms, import 112ms, tests 28ms, environment 0ms)[22m
+
+JSON report written to /eval-results/vitest.json
+PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue executes FIFO with a successful refresh between writes
+PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue rejects during agent lock, pauses queued work, and resumes only after refresh
+PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue skips stale all requests and invalid file requests
+PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue stays locked after a failed agent refresh until a later success
+PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue contains validation failures without rejecting the pump
+FAILED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue keeps hidden agent work locked until a later successful refresh
+FAILED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue retains parallel tool locks until the final tool ends and refresh succeeds
+FAILED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue settles hidden agent lifecycle without leaving ghost tool locks
+FAILED packages/pi-worktree-hud/tests/runtime/session.test.ts::SessionRuntime hidden agent lifecycle blocks staging when an edit starts while the HUD is hidden
+PASSED packages/pi-worktree-hud/tests/runtime/session.test.ts::SessionRuntime hidden agent lifecycle clears settled hidden tool ids but keeps staging gated for refresh
+REQUIRED_NOT_PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue keeps hidden agent work locked until a later successful refresh
+REQUIRED_NOT_PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue retains parallel tool locks until the final tool ends and refresh succeeds
+REQUIRED_NOT_PASSED packages/pi-worktree-hud/tests/runtime/mutations.test.ts::MutationQueue settles hidden agent lifecycle without leaving ghost tool locks
+REQUIRED_NOT_PASSED packages/pi-worktree-hud/tests/runtime/session.test.ts::SessionRuntime hidden agent lifecycle blocks staging when an edit starts while the HUD is hidden
+unresolved hud-hidden-locks

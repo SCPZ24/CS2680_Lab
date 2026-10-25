@@ -1,0 +1,91 @@
+TASK piw-safe-update
+BASE 04a20fdd5ea3b5ad700e451aa4726f8fae78f96b
+PATCH assignment2/mytest/results/piw-safe-update.agent.diff
+HEAD is now at 04a20fd 需求修复：修改entry存放位置。
+
+ RUN  v3.2.7 /app
+
+ ❯ tests/updater.test.ts (20 tests | 1 failed) 13ms
+   ✓ multi-phase update orchestration > runs Git then npm and gates npm on safe Git completion 1ms
+   ✓ multi-phase update orchestration > skips npm after Git 'skipped' 1ms
+   ✓ multi-phase update orchestration > skips npm after Git 'failed' 0ms
+   ✓ multi-phase update orchestration > reports unmanaged Entries and isolates failures between Entries 0ms
+   ✓ multi-phase update orchestration > deduplicates phase mutation by manager and real path 0ms
+   ✓ multi-phase update orchestration > turns detection errors into local failures and continues 0ms
+   ✓ system update adapter > detects a Git root and root package.json as independent ordered phases 1ms
+   ✓ system update adapter > does not treat a monorepo subdirectory as a Git root 1ms
+   ✓ system update adapter > detects a non-Git root package.json as npm-only 1ms
+   ✓ system update adapter > keeps a Git phase when git is missing but a linked-worktree marker exists 1ms
+   × system update adapter > blocks npm when a Git marker cannot be verified as a worktree 5ms
+     → expected [ { manager: 'npm', …(1) } ] to deeply equal [ { manager: 'git', …(2) }, …(1) ]
+   ✓ system update adapter > blocks npm when git is missing and an Entry has a Git marker 1ms
+   ✓ system update adapter > executes npm update in the Entry root and reports npm JSON counts 0ms
+   ✓ system update adapter > maps successful npm output {"added":0,"removed":0,"changed":0} to up-to-date 0ms
+   ✓ system update adapter > maps successful npm output not json to updated 0ms
+   ✓ system update adapter > does not run npm if package.json disappeared 0ms
+   ✓ system update adapter > safely skips 'dirty' Git before pull 0ms
+   ✓ system update adapter > safely skips 'detached' Git before pull 0ms
+   ✓ system update adapter > safely skips 'no upstream' Git before pull 0ms
+   ✓ system update adapter > uses only pull --ff-only and compares HEAD around a safe Git update 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/updater.test.ts > system update adapter > blocks npm when a Git marker cannot be verified as a worktree
+AssertionError: expected [ { manager: 'npm', …(1) } ] to deeply equal [ { manager: 'git', …(2) }, …(1) ]
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    {[22m
+[32m-     "manager": "git",[39m
+[32m-     "reason": "could not verify Git worktree",[39m
+[32m-     "status": "failed",[39m
+[32m-   },[39m
+[32m-   {[39m
+[2m      "manager": "npm",[22m
+[32m-     "reason": "git phase did not complete safely",[39m
+[32m-     "status": "skipped",[39m
+[31m+     "status": "updated",[39m
+[2m    },[22m
+[2m  ][22m
+
+ ❯ tests/updater.test.ts:131:27
+    129|     const [result] = await runUpdates([entry("x", root)], async () => …
+    130| 
+    131|     expect(result?.steps).toEqual([
+       |                           ^
+    132|       {manager: "git", status: "failed", reason: "could not verify Git…
+    133|       {manager: "npm", status: "skipped", reason: "git phase did not c…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 19 passed (20)
+   Start at  16:42:09
+   Duration  164ms (transform 50ms, setup 0ms, collect 65ms, tests 13ms, environment 0ms, prepare 26ms)
+
+JSON report written to /eval-results/vitest.json
+PASSED tests/updater.test.ts::multi-phase update orchestration runs Git then npm and gates npm on safe Git completion
+PASSED tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'skipped'
+PASSED tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'failed'
+PASSED tests/updater.test.ts::multi-phase update orchestration reports unmanaged Entries and isolates failures between Entries
+PASSED tests/updater.test.ts::multi-phase update orchestration deduplicates phase mutation by manager and real path
+PASSED tests/updater.test.ts::multi-phase update orchestration turns detection errors into local failures and continues
+PASSED tests/updater.test.ts::system update adapter detects a Git root and root package.json as independent ordered phases
+PASSED tests/updater.test.ts::system update adapter does not treat a monorepo subdirectory as a Git root
+PASSED tests/updater.test.ts::system update adapter detects a non-Git root package.json as npm-only
+PASSED tests/updater.test.ts::system update adapter keeps a Git phase when git is missing but a linked-worktree marker exists
+FAILED tests/updater.test.ts::system update adapter blocks npm when a Git marker cannot be verified as a worktree
+PASSED tests/updater.test.ts::system update adapter blocks npm when git is missing and an Entry has a Git marker
+PASSED tests/updater.test.ts::system update adapter executes npm update in the Entry root and reports npm JSON counts
+PASSED tests/updater.test.ts::system update adapter maps successful npm output {"added":0,"removed":0,"changed":0} to up-to-date
+PASSED tests/updater.test.ts::system update adapter maps successful npm output not json to updated
+PASSED tests/updater.test.ts::system update adapter does not run npm if package.json disappeared
+PASSED tests/updater.test.ts::system update adapter safely skips 'dirty' Git before pull
+PASSED tests/updater.test.ts::system update adapter safely skips 'detached' Git before pull
+PASSED tests/updater.test.ts::system update adapter safely skips 'no upstream' Git before pull
+PASSED tests/updater.test.ts::system update adapter uses only pull --ff-only and compares HEAD around a safe Git update
+REQUIRED_NOT_PASSED tests/updater.test.ts::system update adapter blocks npm when a Git marker cannot be verified as a worktree
+unresolved piw-safe-update

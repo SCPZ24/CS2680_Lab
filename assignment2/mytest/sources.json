@@ -1,0 +1,57 @@
+{
+  "shield-recovery": {
+    "repository": "CodexPlayground",
+    "fix_commit": "ad709665b0295459f035270702d2f6a113621c3d",
+    "base_commit": "11c19baf6760c2c56d5dee3fa161b5b8e66f86d9",
+    "production_files": [
+      "src/game/state/playerState.ts",
+      "src/game/state/types.ts"
+    ],
+    "test_cwd": ".",
+    "test_files": [
+      "src/game/state/playerState.test.ts"
+    ]
+  },
+  "piw-safe-update": {
+    "repository": "piw",
+    "fix_commit": "e6ab51f75ede76b25741562fbcdef95c054643df",
+    "base_commit": "04a20fdd5ea3b5ad700e451aa4726f8fae78f96b",
+    "production_files": [
+      "src/updater/system.ts",
+      "src/updater/updater.ts"
+    ],
+    "test_cwd": ".",
+    "test_files": [
+      "tests/updater.test.ts"
+    ]
+  },
+  "hud-status-metadata": {
+    "repository": "z24-pi-extensions",
+    "fix_commit": "e87235bb6ff00b8ae0c2c39b29ae2b7052fcc074",
+    "base_commit": "6f5bf05071178eefbd746348c4715140cd3ed266",
+    "production_files": [
+      "packages/pi-worktree-hud/src/state/model.ts",
+      "packages/pi-worktree-hud/src/tui/hud.ts"
+    ],
+    "test_cwd": "packages/pi-worktree-hud",
+    "test_files": [
+      "packages/pi-worktree-hud/tests/git/parsers.test.ts",
+      "packages/pi-worktree-hud/tests/state/model.test.ts",
+      "packages/pi-worktree-hud/tests/tui/hud.test.ts"
+    ]
+  },
+  "hud-hidden-locks": {
+    "repository": "z24-pi-extensions",
+    "fix_commit": "f31498ad20685057dbdc9ab18c0cc077b8380a9a",
+    "base_commit": "969d5ecbb11aac9baf042043eaa3ddb239506aa4",
+    "production_files": [
+      "packages/pi-worktree-hud/src/runtime/mutations.ts",
+      "packages/pi-worktree-hud/src/runtime/session.ts"
+    ],
+    "test_cwd": "packages/pi-worktree-hud",
+    "test_files": [
+      "packages/pi-worktree-hud/tests/runtime/mutations.test.ts",
+      "packages/pi-worktree-hud/tests/runtime/session.test.ts"
+    ]
+  }
+}

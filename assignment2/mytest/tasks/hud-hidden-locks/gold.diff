@@ -1,0 +1,125 @@
+diff --git a/packages/pi-worktree-hud/src/runtime/mutations.ts b/packages/pi-worktree-hud/src/runtime/mutations.ts
+index 0cb2c0b..4bc20fa 100644
+--- a/packages/pi-worktree-hud/src/runtime/mutations.ts
++++ b/packages/pi-worktree-hud/src/runtime/mutations.ts
+@@ -54,6 +54,10 @@ export class MutationQueue {
+     return this.#agentTools.size;
+   }
+ 
++  get agentRefreshPending(): boolean {
++    return this.#agentRefreshPending;
++  }
++
+   enqueue(request: MutationRequest): boolean {
+     if (
+       this.#disposed ||
+@@ -70,24 +74,29 @@ export class MutationQueue {
+     this.#agentTools.add(toolCallId);
+   }
+ 
+-  unlockAgent(toolCallId: string): void {
++  unlockAgent(toolCallId: string, refreshNow = true): void {
+     if (!this.#agentTools.delete(toolCallId) || this.#agentTools.size > 0)
+       return;
+-    this.#refreshAfterAgent();
+-  }
+-
+-  forgetAgent(toolCallId: string): void {
+-    this.#agentTools.delete(toolCallId);
++    this.#agentRefreshPending = true;
++    if (refreshNow) this.requestAgentRefresh();
+   }
+ 
+-  clearAgentLocks(): void {
++  clearAgentLocks(refreshNow = true): void {
+     if (this.#agentTools.size === 0) return;
+     this.#agentTools.clear();
+-    this.#refreshAfterAgent();
++    this.#agentRefreshPending = true;
++    if (refreshNow) this.requestAgentRefresh();
+   }
+ 
+-  forgetAgentLocks(): void {
+-    this.#agentTools.clear();
++  requestAgentRefresh(): void {
++    if (
++      this.#disposed ||
++      !this.#agentRefreshPending ||
++      this.#agentTools.size > 0 ||
++      this.#unlock
++    )
++      return;
++    this.#refreshAfterAgent();
+   }
+ 
+   refreshSucceeded(): void {
+@@ -132,7 +141,6 @@ export class MutationQueue {
+   }
+ 
+   #refreshAfterAgent(): void {
+-    this.#agentRefreshPending = true;
+     const pending = this.#options
+       .refresh()
+       .then((success) => {
+diff --git a/packages/pi-worktree-hud/src/runtime/session.ts b/packages/pi-worktree-hud/src/runtime/session.ts
+index 8f34280..76b2cd3 100644
+--- a/packages/pi-worktree-hud/src/runtime/session.ts
++++ b/packages/pi-worktree-hud/src/runtime/session.ts
+@@ -126,6 +126,7 @@ export class SessionRuntime {
+   show(focused = true): void {
+     if (this.#disposed) return;
+     if (!this.#overlay?.mounted) this.#mount();
++    this.#mutations.requestAgentRefresh();
+     if (focused) this.open();
+   }
+ 
+@@ -146,7 +147,9 @@ export class SessionRuntime {
+     if (this.#component) this.#component.focused = true;
+     this.#overlay?.focus();
+     this.#poll.focus();
+-    void this.refresh();
++    if (this.#mutations.agentRefreshPending)
++      this.#mutations.requestAgentRefresh();
++    else void this.refresh();
+   }
+ 
+   close(): void {
+@@ -182,30 +185,27 @@ export class SessionRuntime {
+   }
+ 
+   toolStart(toolCallId: string, toolName: string): void {
+-    if (this.#mode === "unmounted") return;
+     if (["edit", "write", "bash"].includes(toolName)) {
+       this.#mutations.lockAgent(toolCallId);
+-      this.#poll.activity();
++      if (this.#mode !== "unmounted") this.#poll.activity();
+     }
+   }
+ 
+   toolEnd(toolCallId: string): void {
+-    if (this.#mode === "unmounted") this.#mutations.forgetAgent(toolCallId);
+-    else this.#mutations.unlockAgent(toolCallId);
++    this.#mutations.unlockAgent(toolCallId, this.#mode !== "unmounted");
+   }
+ 
+   clearAgentLocks(): void {
+-    if (this.#mode === "unmounted") this.#mutations.forgetAgentLocks();
+-    else this.#mutations.clearAgentLocks();
++    this.#mutations.clearAgentLocks(this.#mode !== "unmounted");
+   }
+ 
+   agentEnd(): void {
+-    if (this.#mode === "unmounted") {
+-      this.#mutations.forgetAgentLocks();
+-      return;
+-    }
+-    if (this.#mutations.agentLockCount > 0) this.#mutations.clearAgentLocks();
++    if (this.#mutations.agentLockCount > 0)
++      this.#mutations.clearAgentLocks(this.#mode !== "unmounted");
++    else if (this.#mode === "unmounted") this.#mutations.lockAgent("agent-end");
+     else void this.refresh();
++    if (this.#mode === "unmounted")
++      this.#mutations.unlockAgent("agent-end", false);
+   }
+ 
+   status(): string {

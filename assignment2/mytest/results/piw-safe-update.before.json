@@ -1,0 +1,31 @@
+{
+  "instance_id": "piw-safe-update",
+  "patch": null,
+  "resolved": false,
+  "exit_code": 1,
+  "tests": {
+    "tests/updater.test.ts::multi-phase update orchestration runs Git then npm and gates npm on safe Git completion": "passed",
+    "tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'skipped'": "passed",
+    "tests/updater.test.ts::multi-phase update orchestration skips npm after Git 'failed'": "passed",
+    "tests/updater.test.ts::multi-phase update orchestration reports unmanaged Entries and isolates failures between Entries": "passed",
+    "tests/updater.test.ts::multi-phase update orchestration deduplicates phase mutation by manager and real path": "passed",
+    "tests/updater.test.ts::multi-phase update orchestration turns detection errors into local failures and continues": "passed",
+    "tests/updater.test.ts::system update adapter detects a Git root and root package.json as independent ordered phases": "passed",
+    "tests/updater.test.ts::system update adapter does not treat a monorepo subdirectory as a Git root": "passed",
+    "tests/updater.test.ts::system update adapter detects a non-Git root package.json as npm-only": "passed",
+    "tests/updater.test.ts::system update adapter keeps a Git phase when git is missing but a linked-worktree marker exists": "passed",
+    "tests/updater.test.ts::system update adapter blocks npm when a Git marker cannot be verified as a worktree": "failed",
+    "tests/updater.test.ts::system update adapter blocks npm when git is missing and an Entry has a Git marker": "passed",
+    "tests/updater.test.ts::system update adapter executes npm update in the Entry root and reports npm JSON counts": "passed",
+    "tests/updater.test.ts::system update adapter maps successful npm output {\"added\":0,\"removed\":0,\"changed\":0} to up-to-date": "passed",
+    "tests/updater.test.ts::system update adapter maps successful npm output not json to updated": "passed",
+    "tests/updater.test.ts::system update adapter does not run npm if package.json disappeared": "passed",
+    "tests/updater.test.ts::system update adapter safely skips 'dirty' Git before pull": "passed",
+    "tests/updater.test.ts::system update adapter safely skips 'detached' Git before pull": "passed",
+    "tests/updater.test.ts::system update adapter safely skips 'no upstream' Git before pull": "passed",
+    "tests/updater.test.ts::system update adapter uses only pull --ff-only and compares HEAD around a safe Git update": "passed"
+  },
+  "missing_or_failed": [
+    "tests/updater.test.ts::system update adapter blocks npm when a Git marker cannot be verified as a worktree"
+  ]
+}

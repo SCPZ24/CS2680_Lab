@@ -1,0 +1,141 @@
+diff --git a/packages/pi-worktree-hud/src/runtime/mutations.ts b/packages/pi-worktree-hud/src/runtime/mutations.ts
+index 0cb2c0b..63d5657 100644
+--- a/packages/pi-worktree-hud/src/runtime/mutations.ts
++++ b/packages/pi-worktree-hud/src/runtime/mutations.ts
+@@ -54,6 +54,10 @@ export class MutationQueue {
+     return this.#agentTools.size;
+   }
+ 
++  get agentRefreshPending(): boolean {
++    return this.#agentRefreshPending;
++  }
++
+   enqueue(request: MutationRequest): boolean {
+     if (
+       this.#disposed ||
+@@ -70,20 +74,20 @@ export class MutationQueue {
+     this.#agentTools.add(toolCallId);
+   }
+ 
+-  unlockAgent(toolCallId: string): void {
++  unlockAgent(toolCallId: string, refreshNow = true): void {
+     if (!this.#agentTools.delete(toolCallId) || this.#agentTools.size > 0)
+       return;
+-    this.#refreshAfterAgent();
++    this.#refreshAfterAgent(refreshNow);
+   }
+ 
+   forgetAgent(toolCallId: string): void {
+     this.#agentTools.delete(toolCallId);
+   }
+ 
+-  clearAgentLocks(): void {
++  clearAgentLocks(refreshNow = true): void {
+     if (this.#agentTools.size === 0) return;
+     this.#agentTools.clear();
+-    this.#refreshAfterAgent();
++    this.#refreshAfterAgent(refreshNow);
+   }
+ 
+   forgetAgentLocks(): void {
+@@ -96,6 +100,24 @@ export class MutationQueue {
+     if (!this.#unlock) void this.#pump();
+   }
+ 
++  requestAgentRefresh(): void {
++    this.#agentRefreshPending = true;
++    const pending = this.#options
++      .refresh()
++      .then((success) => {
++        if (success) this.refreshSucceeded();
++      })
++      .catch((error) => {
++        this.#options.onError?.(
++          error instanceof Error ? error.message : String(error),
++        );
++      });
++    this.#unlock = pending.finally(() => {
++      this.#unlock = undefined;
++      if (!this.#agentRefreshPending) void this.#pump();
++    });
++  }
++
+   async idle(): Promise<void> {
+     while (this.#running || this.#unlock || this.#queue.length > 0) {
+       await (this.#running ?? this.#unlock ?? Promise.resolve());
+@@ -131,8 +153,9 @@ export class MutationQueue {
+     return this.#running;
+   }
+ 
+-  #refreshAfterAgent(): void {
++  #refreshAfterAgent(refreshNow: boolean): void {
+     this.#agentRefreshPending = true;
++    if (!refreshNow) return;
+     const pending = this.#options
+       .refresh()
+       .then((success) => {
+diff --git a/packages/pi-worktree-hud/src/runtime/session.ts b/packages/pi-worktree-hud/src/runtime/session.ts
+index 8f34280..b8f6b55 100644
+--- a/packages/pi-worktree-hud/src/runtime/session.ts
++++ b/packages/pi-worktree-hud/src/runtime/session.ts
+@@ -130,6 +130,7 @@ export class SessionRuntime {
+   }
+ 
+   hide(): void {
++    if (this.#mode === "unmounted") return;
+     this.#poll.compact();
+     this.#refresh.cancel();
+     this.#previewAbort?.abort();
+@@ -146,7 +147,8 @@ export class SessionRuntime {
+     if (this.#component) this.#component.focused = true;
+     this.#overlay?.focus();
+     this.#poll.focus();
+-    void this.refresh();
++    if (this.#mutations.agentRefreshPending) this.requestAgentRefresh();
++    else void this.refresh();
+   }
+ 
+   close(): void {
+@@ -182,7 +184,6 @@ export class SessionRuntime {
+   }
+ 
+   toolStart(toolCallId: string, toolName: string): void {
+-    if (this.#mode === "unmounted") return;
+     if (["edit", "write", "bash"].includes(toolName)) {
+       this.#mutations.lockAgent(toolCallId);
+       this.#poll.activity();
+@@ -190,13 +191,19 @@ export class SessionRuntime {
+   }
+ 
+   toolEnd(toolCallId: string): void {
+-    if (this.#mode === "unmounted") this.#mutations.forgetAgent(toolCallId);
+-    else this.#mutations.unlockAgent(toolCallId);
++    if (this.#mode === "unmounted") {
++      this.#mutations.unlockAgent(toolCallId, false);
++    } else {
++      this.#mutations.unlockAgent(toolCallId);
++    }
+   }
+ 
+   clearAgentLocks(): void {
+-    if (this.#mode === "unmounted") this.#mutations.forgetAgentLocks();
+-    else this.#mutations.clearAgentLocks();
++    if (this.#mode === "unmounted") {
++      this.#mutations.forgetAgentLocks();
++    } else {
++      this.#mutations.clearAgentLocks();
++    }
+   }
+ 
+   agentEnd(): void {
+@@ -208,6 +215,10 @@ export class SessionRuntime {
+     else void this.refresh();
+   }
+ 
++  requestAgentRefresh(): void {
++    this.#mutations.requestAgentRefresh();
++  }
++
+   status(): string {
+     const snapshot = this.#snapshot;
+     return [

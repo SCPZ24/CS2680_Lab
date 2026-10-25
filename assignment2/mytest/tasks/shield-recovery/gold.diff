@@ -1,0 +1,79 @@
+diff --git a/src/game/state/playerState.ts b/src/game/state/playerState.ts
+index f3a220b..f73f1f7 100644
+--- a/src/game/state/playerState.ts
++++ b/src/game/state/playerState.ts
+@@ -7,6 +7,7 @@ export function createInitialPlayerState(): PlayerState {
+     maxShield: 60,
+     shield: 60,
+     lastDamageAt: -Infinity,
++    lastShieldRecoveryAt: -Infinity,
+     shieldRecoveryDelayMs: 1000,
+     shieldRecoveryPerSecond: 18
+   };
+@@ -18,14 +19,21 @@ export function applyDamage(
+   timestamp: number
+ ): PlayerState {
+   const dmg = Math.max(0, damage);
++  if (dmg <= 0) return player;
++
+   const shieldDamage = Math.min(player.shield, dmg);
+   const healthDamage = Math.max(0, dmg - shieldDamage);
++  const effectiveDamage = shieldDamage + healthDamage;
++  if (effectiveDamage <= 0) return player;
+ 
+   return {
+     ...player,
+     shield: player.shield - shieldDamage,
+     health: Math.max(0, player.health - healthDamage),
+-    lastDamageAt: timestamp
++    lastDamageAt: timestamp,
++    // Taking damage resets the "no-damage" window that gates recovery.
++    // We also reset the recovery integration cursor so future ticks start fresh.
++    lastShieldRecoveryAt: timestamp
+   };
+ }
+ 
+@@ -35,7 +43,11 @@ export function tickShieldRecovery(player: PlayerState, timestamp: number): Play
+   const eligibleAt = player.lastDamageAt + player.shieldRecoveryDelayMs;
+   if (timestamp < eligibleAt) return player;
+ 
+-  const deltaSeconds = (timestamp - eligibleAt) / 1000;
++  // Integrate recovery only for time not already accounted for.
++  const from = Math.max(eligibleAt, player.lastShieldRecoveryAt);
++  if (timestamp <= from) return player;
++
++  const deltaSeconds = (timestamp - from) / 1000;
+   const recoveredShield = Math.min(
+     player.maxShield,
+     player.shield + deltaSeconds * player.shieldRecoveryPerSecond
+@@ -43,7 +55,8 @@ export function tickShieldRecovery(player: PlayerState, timestamp: number): Play
+ 
+   return {
+     ...player,
+-    shield: recoveredShield
++    shield: recoveredShield,
++    lastShieldRecoveryAt: timestamp
+   };
+ }
+ 
+@@ -54,4 +67,3 @@ export function applyHealPickup(player: PlayerState, healAmount: number): Player
+     health: Math.min(player.maxHealth, player.health + heal)
+   };
+ }
+-
+diff --git a/src/game/state/types.ts b/src/game/state/types.ts
+index 25a3170..5daab26 100644
+--- a/src/game/state/types.ts
++++ b/src/game/state/types.ts
+@@ -8,7 +8,10 @@ export type PlayerState = {
+   // Milliseconds since game start (or any monotonic timebase the caller uses).
+   lastDamageAt: number;
+ 
++  // Tracks the latest timestamp that was already accounted for in shield recovery.
++  // This prevents double-counting when tickShieldRecovery is called repeatedly.
++  lastShieldRecoveryAt: number;
++
+   shieldRecoveryDelayMs: number;
+   shieldRecoveryPerSecond: number;
+ };
+-

@@ -1,0 +1,49 @@
+diff --git a/src/game/state/playerState.ts b/src/game/state/playerState.ts
+index f3a220b..0e52e6a 100644
+--- a/src/game/state/playerState.ts
++++ b/src/game/state/playerState.ts
+@@ -8,7 +8,8 @@ export function createInitialPlayerState(): PlayerState {
+     shield: 60,
+     lastDamageAt: -Infinity,
+     shieldRecoveryDelayMs: 1000,
+-    shieldRecoveryPerSecond: 18
++    shieldRecoveryPerSecond: 18,
++    elapsedRecoveryTime: 0
+   };
+ }
+ 
+@@ -35,7 +36,10 @@ export function tickShieldRecovery(player: PlayerState, timestamp: number): Play
+   const eligibleAt = player.lastDamageAt + player.shieldRecoveryDelayMs;
+   if (timestamp < eligibleAt) return player;
+ 
+-  const deltaSeconds = (timestamp - eligibleAt) / 1000;
++  const totalElapsed = (timestamp - eligibleAt) / 1000;
++  const deltaSeconds = Math.max(0, totalElapsed - player.elapsedRecoveryTime);
++  const elapsedRecoveryTime = player.elapsedRecoveryTime + deltaSeconds;
++
+   const recoveredShield = Math.min(
+     player.maxShield,
+     player.shield + deltaSeconds * player.shieldRecoveryPerSecond
+@@ -43,7 +47,8 @@ export function tickShieldRecovery(player: PlayerState, timestamp: number): Play
+ 
+   return {
+     ...player,
+-    shield: recoveredShield
++    shield: recoveredShield,
++    elapsedRecoveryTime
+   };
+ }
+ 
+diff --git a/src/game/state/types.ts b/src/game/state/types.ts
+index 25a3170..3c83308 100644
+--- a/src/game/state/types.ts
++++ b/src/game/state/types.ts
+@@ -10,5 +10,8 @@ export type PlayerState = {
+ 
+   shieldRecoveryDelayMs: number;
+   shieldRecoveryPerSecond: number;
++
++  // Accumulated milliseconds of shield recovery already integrated into shield value.
++  elapsedRecoveryTime: number;
+ };
+ 

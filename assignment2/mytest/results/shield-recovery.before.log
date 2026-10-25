@@ -1,0 +1,68 @@
+TASK shield-recovery
+BASE 11c19baf6760c2c56d5dee3fa161b5b8e66f86d9
+PATCH (baseline)
+HEAD is now at 11c19ba feat: add player shield and health rules
+
+ RUN  v3.2.4 /app
+
+ ❯ src/game/state/playerState.test.ts (7 tests | 2 failed) 7ms
+   ✓ playerState survival rules > createInitialPlayerState returns expected defaults 1ms
+   ✓ playerState survival rules > routes incoming damage to shield before health 0ms
+   ✓ playerState survival rules > overflow damage spills from shield to health 0ms
+   ✓ playerState survival rules > starts shield recovery only after the recovery delay 0ms
+   × playerState survival rules > shield recovery is linear across multiple ticks (no double-counting) 3ms
+     → expected 37 to be close to 28, received difference is 9, but expected 5e-7
+   ✓ playerState survival rules > heals health with pickups without exceeding max health 0ms
+   × playerState survival rules > applyDamage does not update lastDamageAt when effective damage is <= 0 1ms
+     → expected 1234 to be -Infinity // Object.is equality
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/game/state/playerState.test.ts > playerState survival rules > shield recovery is linear across multiple ticks (no double-counting)
+AssertionError: expected 37 to be close to 28, received difference is 9, but expected 5e-7
+ ❯ src/game/state/playerState.test.ts:63:23
+     61| 
+     62|     const t2 = tickShieldRecovery(t1, 3000);
+     63|     expect(t2.shield).toBeCloseTo(28, 6); // +0.5s * 18 = +9 more (not…
+       |                       ^
+     64|   });
+     65| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  src/game/state/playerState.test.ts > playerState survival rules > applyDamage does not update lastDamageAt when effective damage is <= 0
+AssertionError: expected 1234 to be -Infinity // Object.is equality
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- -Infinity[39m
+[31m+ 1234[39m
+
+ ❯ src/game/state/playerState.test.ts:82:31
+
+     80| 
+     81|     const zero = applyDamage(player, 0, 1234);
+     82|     expect(zero.lastDamageAt).toBe(-Infinity);
+       |                               ^
+     83|     expect(zero.health).toBe(player.health);
+     84|     expect(zero.shield).toBe(player.shield);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 5 passed (7)
+   Start at  16:38:49
+   Duration  263ms (transform 23ms, setup 10ms, collect 12ms, tests 7ms, environment 159ms, prepare 22ms)
+
+JSON report written to /eval-results/vitest.json
+PASSED src/game/state/playerState.test.ts::playerState survival rules createInitialPlayerState returns expected defaults
+PASSED src/game/state/playerState.test.ts::playerState survival rules routes incoming damage to shield before health
+PASSED src/game/state/playerState.test.ts::playerState survival rules overflow damage spills from shield to health
+PASSED src/game/state/playerState.test.ts::playerState survival rules starts shield recovery only after the recovery delay
+FAILED src/game/state/playerState.test.ts::playerState survival rules shield recovery is linear across multiple ticks (no double-counting)
+PASSED src/game/state/playerState.test.ts::playerState survival rules heals health with pickups without exceeding max health
+FAILED src/game/state/playerState.test.ts::playerState survival rules applyDamage does not update lastDamageAt when effective damage is <= 0
+REQUIRED_NOT_PASSED src/game/state/playerState.test.ts::playerState survival rules shield recovery is linear across multiple ticks (no double-counting)
+REQUIRED_NOT_PASSED src/game/state/playerState.test.ts::playerState survival rules applyDamage does not update lastDamageAt when effective damage is <= 0
+unresolved shield-recovery

@@ -1,0 +1,103 @@
+{
+  "harness_commit": "e7a0e61e26cf41e428a4a0428189cb139b4d5b69",
+  "base_url": "https://openrouter.ai/api/v1",
+  "model": "qwen/qwen3.6-35b-a3b",
+  "reasoning_enabled": true,
+  "tasks": {
+    "shield-recovery": {
+      "resolved": false,
+      "base_resolved": false,
+      "gold_resolved": true,
+      "fail_to_pass_count": 2,
+      "pass_to_pass_count": 5,
+      "tests_passed": 6,
+      "tests_total": 7,
+      "end_reason": "done",
+      "iterations": 9,
+      "tool_calls": 15,
+      "api_retries": 0,
+      "usage": {
+        "prompt_tokens": 66133,
+        "completion_tokens": 6493,
+        "total_tokens": 72626
+      },
+      "trace": "madsLoop_logs/shield-recovery/run_918d33f5d89f47729123c591f320e813.jsonl",
+      "image_id": "sha256:d987e6ed94d3c7e8592b0746e2beae6b4d2493d4bbd543d5686714ec3d1aa803",
+      "patch_sha256": "5bdc5a017b92a6e706a35315477615d3dd37c79e08a140494589c421947f3c38",
+      "agent_evaluation": "results/shield-recovery.agent-eval.json"
+    },
+    "piw-safe-update": {
+      "resolved": false,
+      "base_resolved": false,
+      "gold_resolved": true,
+      "fail_to_pass_count": 1,
+      "pass_to_pass_count": 19,
+      "tests_passed": 19,
+      "tests_total": 20,
+      "end_reason": "no_tool_calls",
+      "iterations": 5,
+      "tool_calls": 9,
+      "api_retries": 0,
+      "usage": {
+        "prompt_tokens": 27660,
+        "completion_tokens": 4970,
+        "total_tokens": 32630
+      },
+      "trace": "madsLoop_logs/piw-safe-update/run_94dabe2274884f72979e7c188a93ce02.jsonl",
+      "image_id": "sha256:75a319296cd5ef25ab555030338979ecb371e887402ca5ba022b2e0d528ecb52",
+      "patch_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "agent_evaluation": "results/piw-safe-update.agent-eval.json"
+    },
+    "hud-status-metadata": {
+      "resolved": false,
+      "base_resolved": false,
+      "gold_resolved": true,
+      "fail_to_pass_count": 2,
+      "pass_to_pass_count": 20,
+      "tests_passed": 21,
+      "tests_total": 22,
+      "end_reason": "done",
+      "iterations": 19,
+      "tool_calls": 26,
+      "api_retries": 0,
+      "usage": {
+        "prompt_tokens": 660182,
+        "completion_tokens": 5170,
+        "total_tokens": 665352
+      },
+      "trace": "madsLoop_logs/hud-status-metadata/run_ca64c577878a4ce39f9cd8917b4c8475.jsonl",
+      "image_id": "sha256:d84d26aac427db1385bf3f08df8d8a00b85668780fed5521a01216912640ec54",
+      "patch_sha256": "41494b7e1a4abea38a4756b3f4569799ffc9ed1d4a5ce60b147d35f2abaedb4a",
+      "agent_evaluation": "results/hud-status-metadata.agent-eval.json"
+    },
+    "hud-hidden-locks": {
+      "resolved": true,
+      "base_resolved": false,
+      "gold_resolved": true,
+      "fail_to_pass_count": 4,
+      "pass_to_pass_count": 6,
+      "tests_passed": 10,
+      "tests_total": 10,
+      "end_reason": "done",
+      "iterations": 18,
+      "tool_calls": 29,
+      "api_retries": 0,
+      "usage": {
+        "prompt_tokens": 516731,
+        "completion_tokens": 6775,
+        "total_tokens": 523506
+      },
+      "trace": "madsLoop_logs/hud-hidden-locks/run_dcbe581f8f59497499023ed86457bcbe.jsonl",
+      "image_id": "sha256:a7b162abc3ba6384ed2351177fd6cfee6fb18e0d3025ad57a6bcd99e639848b8",
+      "patch_sha256": "d4aa043d62c032704bdc59cf89255483df42348319c7059d4154ed160e414e16",
+      "agent_evaluation": "results/hud-hidden-locks.agent-eval.json"
+    }
+  },
+  "usage": {
+    "prompt_tokens": 1270706,
+    "completion_tokens": 23408,
+    "total_tokens": 1294114
+  },
+  "resolved_count": 1,
+  "task_count": 4
+}
