@@ -12,15 +12,15 @@ write your agent:
   Agent.solve() below show every call;
 - a Sandbox (src/sandbox.py) is the only way to read, write or run anything in a task's
   repository, which lives in its own task container;
-- the course API (environment variables: CS2680_BASE_URL, CS2680_API_KEY and the model ids
-  CS2680_MODEL_EXPERT / CS2680_MODEL_STANDARD / CS2680_MODEL_STARTER) is used by call_model() below;
+- model-config.yaml defines expert, standard and starter; the runner passes a snapshot with
+  proxy URLs, and self.models / self.clients contain only the configured tiers;
 - the trace (dispatcher.logger(k)) must get every model call and every tool call: the
   leaderboard computes your cost and turn counts from it.
 """
 
-import os
 import sys
 
+from .config import load_model_config
 from .sandbox import Sandbox
 
 
@@ -29,7 +29,7 @@ def _debug(msg: str):
 
 
 def call_model(client, model_id: str, messages: list, logger, iteration: int, **kwargs):
-    """One chat-completions request to the course API, logged in the task's trace.
+    """One chat-completions request to the selected model, logged in the task's trace.
 
     `messages` is an OpenAI-style message list; extra keyword arguments (e.g. tools=[...]) are
     passed to the API unchanged. Nothing else is done for you here.
@@ -45,12 +45,15 @@ def call_model(client, model_id: str, messages: list, logger, iteration: int, **
 
 
 class Agent:
-    def __init__(self, dispatcher):
+    def __init__(self, dispatcher, models=None):
         from openai import OpenAI                       # installed in the agent container
 
         self.dispatcher = dispatcher
-        self.model_id = os.environ["CS2680_MODEL_STANDARD"]   # this starter's model; any CS2680_MODEL_* may be used
-        self.client = OpenAI(base_url=os.environ["CS2680_BASE_URL"], api_key=os.environ["CS2680_API_KEY"])
+        self.models = load_model_config() if models is None else models
+        self.clients = {
+            tier: OpenAI(base_url=model["base_url"], api_key=model["api_key"])
+            for tier, model in self.models.items()
+        }
 
     def run(self):
         """Work through the tasks. This starter takes them one at a time, in the order given."""
@@ -78,7 +81,9 @@ class Agent:
         iterations = 0
 
         # ---- your agent's work on the task goes here -----------------------------------------
-        # Ask the model:  response = call_model(self.client, self.model_id, messages, logger, iterations)
+        # Ask a configured tier, e.g. if "standard" in self.models:
+        # response = call_model(self.clients["standard"], self.models["standard"]["model_name"],
+        #                       messages, logger, iterations)
         # Repository:     r = sb.exec("git status --short", timeout_s=60)  # {"output", "exit_code", "timed_out"}
         #                 text = sb.read_text("path/to/file.py");  sb.write_text("path/to/file.py", text)
         # Log tool use:   logger.tool_call(iterations, name, args)

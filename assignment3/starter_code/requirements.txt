@@ -1,0 +1,2 @@
+# Host-side YAML loading; the agent image receives JSON and already has openai.
+PyYAML>=6.0,<7
