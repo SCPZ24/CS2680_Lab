@@ -1,12 +1,14 @@
 """The host reads YAML once; containers receive JSON with internal proxy URLs."""
 
 import json
+import math
 import os
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 MODEL_TIERS = ("expert", "standard", "starter")
 MODEL_FIELDS = ("base_url", "model_name", "api_key")
+PRICE_FIELDS = ("input", "cache", "output")  # USD per million tokens; cache = cache-hit input.
 MODEL_CONFIG_PATH = Path(__file__).resolve().parent.parent / "model-config.yaml"
 MODEL_CONFIG_ENV = "A3_MODEL_CONFIG_JSON"
 
@@ -43,7 +45,7 @@ def _model_configs(data) -> dict:
         if not isinstance(entry, dict):
             raise ValueError(f"{tier} must contain a mapping")
         # Empty template sections are unconfigured, just like absent tiers.
-        if not entry or all(value is None or value == "" for value in entry.values()):
+        if not entry or all(entry.get(field) in (None, "") for field in MODEL_FIELDS):
             continue
         model = {}
         for field in MODEL_FIELDS:
@@ -55,6 +57,14 @@ def _model_configs(data) -> dict:
             model["base_url"] = validate_base_url(model["base_url"])
         except ValueError:
             raise ValueError(f"{tier}.base_url must be a valid HTTP(S) API base URL") from None
+        for field in PRICE_FIELDS:
+            value = entry.get(field)
+            if value is None or value == "":
+                continue
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value) or value < 0):
+                raise ValueError(f"{tier}.{field} must be a finite non-negative USD price per million tokens")
+            model[field] = value
         models[tier] = model
     return models
 

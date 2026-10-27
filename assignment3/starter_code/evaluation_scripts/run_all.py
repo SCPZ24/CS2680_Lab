@@ -14,7 +14,7 @@
 
   --limit N       only the first N tasks can be opened (0 = preflight: start the agent, start
                   and health-check every task's sandbox, check egress, stop)
-  A3_MAX_LIVE     tasks (sandboxes) live at once, default 5
+  Tasks run strictly one at a time (including grading and rework).
   A3_MAX_GRADING  verifier containers running at once, default 3
   A3_EVAL_TIMEOUT seconds per grading, default 2100 (a hung test suite = all its tests failing)
   A3_RUN_LIMIT_S  seconds for the whole run, counted from the moment the first task is opened,
@@ -33,7 +33,7 @@ The AGENT drives the task flow (see madsOpt.py / dispatcher.py). This script sta
 infrastructure, then serves the agent's requests one at a time and enforces the rules:
 
   next_task   start sandbox k (next index), answer {problem_statement, requirements, interface,
-              task=k, sandbox_url, workdir}; error when A3_MAX_LIVE are live; task=null at the end
+              task=k, sandbox_url, workdir}; error when a task is live; task=null at the end
   extract k   `git add -N . && git diff` of sandbox k -> .tasks/patches/<k>/patch.diff
   evaluate k  snapshot the submitted patch and grade it IN THE BACKGROUND on a pristine
               container (evaluate_one.sh); answer {pending: true} at once; when the grading ends,
@@ -91,6 +91,8 @@ from typing import Optional
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from src.config import MODEL_CONFIG_ENV, MODEL_CONFIG_PATH, load_model_config
+from evaluation_scripts.metrics import collect_metrics
+from dispatcher import MAX_LIVE
 
 os.chdir(ROOT)
 TASKS_JSON = "evaluation_scripts/agent_task_input.json"
@@ -108,7 +110,6 @@ SBX_CPUS = os.environ.get("A3_SBX_CPUS", "1"); SBX_MEM = os.environ.get("A3_SBX_
 SBX_PORT = 8000; PROXY_PORT = 3128
 MODELS = {}  # YAML snapshot loaded by main(), before containers start.
 PROXIES = {}  # Configured tier -> internal proxy container name.
-MAX_LIVE = int(os.environ.get("A3_MAX_LIVE", "5"))
 MAX_GRADING = int(os.environ.get("A3_MAX_GRADING", "3"))
 EVAL_TIMEOUT = int(os.environ.get("A3_EVAL_TIMEOUT", "2100"))
 RUN_LIMIT_S = int(os.environ.get("A3_RUN_LIMIT_S", str(4 * 3600)))   # whole run, from the first task opened
@@ -351,6 +352,11 @@ class Task:
     evaluated: bool = False          # the current submitted patch has a (finished) grading
     last: Optional[tuple] = None     # (resolved:int, tests_failed:int, tests_total:int)
     t_start: float = 0.0
+    e2e_t0: Optional[float] = None    # monotonic, before sandbox startup
+    e2e_t1: Optional[float] = None    # monotonic, after final grading and cleanup
+    evaluations: int = 0
+    failed_evaluations: int = 0
+    rework_count: int = 0            # continue after a completed failed evaluation
     grading: Optional[subprocess.Popen] = None
     grading_attempt: int = 0
     grading_t0: float = 0.0
@@ -571,6 +577,8 @@ def finish_grading(t: Task):
         passed = total
     failed = total - passed
     t.last = (res, failed, total); t.evaluated = True
+    t.evaluations += 1
+    t.failed_evaluations += int(res != 1)
     secs = int(time.time() - t.grading_t0)
     with open(f"{HOSTLOG}/evaluations.tsv", "a") as f:
         f.write(f"{t.k}\t{t.iid}\t{t.grading_attempt}\t{res}\t{failed}\t{total}\t{secs}\n")
@@ -610,6 +618,7 @@ class Server:
         stop_sandbox(t)
         remove_patch_dir(t.k)
         t.live = False
+        t.e2e_t1 = time.monotonic()
         with open("run_logs/task_times.tsv", "a") as f:
             f.write(f"{t.k}\t{t.iid}\t{t.t_start}\t{time.time()}\n")
         log(f"task {t.k}: DONE, final {t.last[1]}/{t.last[2]} tests failing; live={len(self.live())}")
@@ -652,6 +661,7 @@ class Server:
             if self.next_k >= self.n_available:
                 return self.respond(n, {"ok": True, "task": None})
             t = self.tasks[self.next_k]; self.next_k += 1
+            t.e2e_t0 = time.monotonic()
             log(f"task {t.k}: {t.key} — starting sandbox from {t.sandbox_image}")
             wd = start_sandbox(t)
             if not wd:
@@ -686,6 +696,8 @@ class Server:
             if t.grading is not None or t.queued:
                 return self.respond(n, {"ok": False, "error": f"an evaluation of task {t.k} is still running; wait for evaluate() to return"})
             remove_patch(t.k)
+            if t.evaluated and t.last is not None and t.last[0] != 1:
+                t.rework_count += 1
             t.attempt += 1; t.evaluated = False
             log(f"task {t.k}: agent continues (attempt {t.attempt})")
             return self.respond(n, {"ok": True, "attempt": t.attempt})
@@ -812,17 +824,35 @@ def write_results(tasks, note: str = ""):
     shutil.copy(f"{HOSTLOG}/evaluations.tsv", "run_logs/evaluations.tsv")
     os.makedirs("pro_eval", exist_ok=True)
     res = {t.key: bool(t.last and t.last[0] == 1) for t in tasks}
-    json.dump(res, open("pro_eval/eval_results.json", "w"), indent=2)
+    with open("pro_eval/eval_results.json", "w") as f:
+        json.dump(res, f, indent=2)
     for t in tasks:
         snap = f"{HOSTLOG}/patches/{t.k}_a{t.grading_attempt}.diff"
         if t.last is not None and os.path.exists(snap):
             shutil.copy(snap, f"model_patch_{t.key}.diff")
     sh("python3", f"{SCRIPTS}/make_predictions.py", check=False)
     passed = sum(res.values())
-    rows = [f"| {t.key} | {'PASS' if res[t.key] else 'FAIL'} | {t.last[1] if t.last else '-'}/{t.last[2] if t.last else '-'} |" for t in tasks]
-    open("run_all_results.md", "w").write("\n".join(
+    metrics = collect_metrics(tasks, MODELS, ".tasks/trace/madsOpt_logs")
+    with open("run_logs/metrics.json", "w") as f:
+        json.dump(metrics, f, ensure_ascii=False, indent=2, allow_nan=False)
+        f.write("\n")
+    def number(value, digits=3):
+        return "unknown" if value is None else f"{value:.{digits}f}"
+    totals = metrics["totals"]
+    rows = [f"| {t.key} | {'PASS' if res[t.key] else 'FAIL'} | {t.last[1] if t.last else '-'}/{t.last[2] if t.last else '-'} | "
+            f"{m['evaluations']} | {m['failed_evaluations']} | {m['rework_count']} | {number(m['e2e_seconds'])} | "
+            f"{m['prompt_tokens']} / {m['cached_prompt_tokens']} / {m['completion_tokens']} | {number(m['cost_usd'], 8)} |"
+            for t, m in zip(tasks, metrics["tasks"])]
+    report = "\n".join(
         ["# Evaluation results", "", f"{passed}/{len(tasks)} passed", "", *([note, ""] if note else []),
-         "| task | result | tests failing |", "| --- | --- | --- |", *rows]) + "\n")
+         f"E2E: {number(totals['e2e_seconds'])} s; reworks: {totals['rework_count']}; "
+         f"token cost: {number(totals['cost_usd'], 8)} USD; reported tokens: {totals['total_tokens']}.", "",
+         "Costs use model-config.yaml prices (USD / 1M tokens). Cached input is included in prompt tokens.",
+         "Unknown cost means incomplete usage, trace or pricing; tokens are observed subtotals. Details: run_logs/metrics.json.", "",
+         "| task | result | tests failing | evaluations | failed evaluations | reworks | E2E (s) | prompt / cached / completion tokens | cost (USD) |",
+         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |", *rows]) + "\n"
+    with open("run_all_results.md", "w") as f:
+        f.write(report)
     log(f"wrote run_all_results.md ({passed}/{len(tasks)} passed); host-only records in {HOSTLOG}")
 
 

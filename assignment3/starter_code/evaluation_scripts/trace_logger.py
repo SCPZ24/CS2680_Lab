@@ -1,13 +1,13 @@
 """JSONL run-trace logger (assignment section 0.3).
 
-Course code (evaluation_scripts/, not yours): the leaderboard uses its own copy and computes
-cost and turn counts from this trace. Your agent logs through dispatcher.logger(k), a
-TraceLogger writing madsOpt_logs/<k>/run.jsonl; do not change this file.
+Adapted from the course logger for local self-study: api_request additionally records
+model_tier and cached_prompt_tokens for YAML-based pricing. The official leaderboard uses
+its own copy. Your agent logs through dispatcher.logger(k), a TraceLogger writing
+madsOpt_logs/<k>/run.jsonl.
 
 Writes ./madsOpt_logs/run-<utc timestamp>.jsonl in the CURRENT working
-directory (not the repo checkout), one JSON object per line. Emits exactly
-the graded schema — every line has `timestamp` (ISO-8601) and `event`, plus
-only the fields the assignment lists for that event type. A no-op unless
+directory (not the repo checkout), one JSON object per line. Every line has
+`timestamp` (ISO-8601) and `event`, plus event-specific fields. A no-op unless
 --log was passed.
 """
 
@@ -50,7 +50,8 @@ class TraceLogger:
 
     # model_id: the model this request was sent to; a run may use several (cascades,
     # subagents), and cost is computed per request from it.
-    def api_request(self, iteration: int, prompt_tokens, completion_tokens, total_tokens, model_id: str):
+    def api_request(self, iteration: int, prompt_tokens, completion_tokens, total_tokens, model_id: str,
+                    *, cached_prompt_tokens=0, model_tier=None):
         self._emit(
             "api_request",
             {
@@ -59,6 +60,8 @@ class TraceLogger:
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,
                 "total_tokens": total_tokens,
+                "cached_prompt_tokens": cached_prompt_tokens,
+                "model_tier": model_tier,
             },
         )
 

@@ -1,14 +1,25 @@
+# input/cache/output: USD per 1,000,000 tokens. cache = cache-hit input.
+# Leave a price blank for unknown; use 0 only when explicitly free.
 expert:
   base_url:
   model_name:
   api_key:
+  input:
+  cache:
+  output:
 
 standard:
   base_url:
   model_name:
   api_key:
+  input:
+  cache:
+  output:
 
 starter:
   base_url:
   model_name:
   api_key:
+  input:
+  cache:
+  output:

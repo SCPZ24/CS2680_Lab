@@ -19,7 +19,7 @@ from evaluation_scripts.trace_logger import TraceLogger    # noqa: E402  (course
 SEQ_DIR = os.path.join(HERE, ".tasks", "seq")
 PATCH_DIR = os.path.join(HERE, ".tasks", "patches")
 POLL_S = 1
-MAX_LIVE = 5
+MAX_LIVE = 1  # Self-study runs are strictly serial, including grading and rework.
 
 
 def _log(msg: str):
