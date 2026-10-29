@@ -9,7 +9,7 @@
 
   Session id: every course API request of a run carries <First>_<Last>_<UTC start time> (the egress
   proxy adds it; dispatcher/session.py), with your name from dispatcher/student_name.json: fill it
-  in, or run this once in a terminal and answer. The id is printed and kept in run_logs/session_id.
+  in if desired; otherwise local_<UTC> is used. The id is kept in run_logs/session_id.
   A3_SESSION_ID   the grader's id for a grading (sub_<n>_<UTC>[_c<k>]), used instead of the name
 
   --limit N       only the first N tasks can be opened (0 = preflight: start the agent, start
@@ -333,7 +333,7 @@ def snapshot_scripts():
     after it) and the task list they read to the host-only $A3_HOSTLOG before the agent starts;
     they run from there, never from the folder the agent container mounts."""
     os.makedirs(SCRIPTS, exist_ok=True)
-    for f in ("evaluate_one.sh", "make_predictions.py", "agent_task_input.json"):
+    for f in ("evaluate_one.sh", "run_with_timeout.py", "make_predictions.py", "agent_task_input.json"):
         shutil.copy(f"evaluation_scripts/{f}", f"{SCRIPTS}/{f}")
 
 
@@ -357,6 +357,8 @@ class Task:
     evaluations: int = 0
     failed_evaluations: int = 0
     rework_count: int = 0            # continue after a completed failed evaluation
+    end_reason: str = "not_opened"
+    finalized: bool = False
     grading: Optional[subprocess.Popen] = None
     grading_attempt: int = 0
     grading_t0: float = 0.0
@@ -398,7 +400,7 @@ def load_tasks(limit: int):
     for t in tasks:
         json.dump(t.entry, open(f"{HOSTLOG}/tasks/{t.k}.json", "w"))
     n = len(tasks) if limit < 0 else min(limit, len(tasks))
-    return tasks, n
+    return (tasks if limit == 0 else tasks[:n]), n
 
 
 def ensure_image(img: str, tarbase: str):
@@ -410,7 +412,7 @@ def ensure_image(img: str, tarbase: str):
         if sh("docker", "load", "-q", "-i", tar, check=False).returncode == 0 and have_image(img):
             return
     log(f"pulling {img}")
-    if sh("docker", "pull", "-q", img, check=False).returncode != 0:
+    if sh("docker", "pull", "--platform", "linux/amd64", "-q", img, check=False).returncode != 0:
         sys.exit(f"cannot get {img} — run evaluation_scripts/prepare_images.sh (with internet) or set A3_ASSETS to a dir with images/")
 
 
@@ -427,7 +429,7 @@ def ensure_images(tasks):
             if not os.path.isdir(f"{ASSETS}/wheels"):
                 sys.exit(f"no {ASSETS}/wheels to build {AGENT_IMAGE} (pip download openai -d wheels)")
             log(f"building {AGENT_IMAGE} from dispatcher/agent.Dockerfile (context {ASSETS})")
-            sh("docker", "build", "-q", "-f", "dispatcher/agent.Dockerfile", "-t", AGENT_IMAGE, ASSETS)
+            sh("docker", "build", "--platform", "linux/amd64", "-q", "-f", "dispatcher/agent.Dockerfile", "-t", AGENT_IMAGE, ASSETS)
 
 
 def create_internal_network(name: str):
@@ -462,7 +464,7 @@ def start_infra():
         'cd /madsOpt/.tasks/trace\n'
         'python3 /madsOpt/madsOpt.py --log\n'
         'mkdir -p /madsOpt/madsOpt_logs && cp -r madsOpt_logs/. /madsOpt/madsOpt_logs/ 2>/dev/null || true\n')
-    env = ["-e", MODEL_CONFIG_ENV, "-e", "MADSOPT_MAX_ITERATIONS",
+    env = ["-e", MODEL_CONFIG_ENV, "-e", "MADSOPT_MAX_ITERATIONS", "-e", "MADSOPT_MAX_REWORKS",
            "-e", f"HOST_ID={host_id}", "-e", "PYTHONDONTWRITEBYTECODE=1"]
     hidden = f"{HOSTLOG}/hidden.json"     # the task lists (instance ids, hidden test names) read as {} in the agent
     with open(hidden, "w") as f:
@@ -484,13 +486,19 @@ def cleanup():
     sh("docker", "exec", AGENT, "chown", "-R", f"{os.getuid()}:{os.getgid()}", "/madsOpt/.tasks", "/madsOpt/madsOpt_logs", check=False)
     for name, out in [(AGENT, "agent.log"), *[(name, f"proxy_{tier}.log") for tier, name in PROXIES.items()]]:
         r = sh("docker", "logs", name, check=False)
-        open(f"run_logs/{out}", "w").write((r.stdout or "") + (r.stderr or ""))
+        with open(f"run_logs/{out}", "w") as f:
+            f.write((r.stdout or "") + (r.stderr or ""))
     ids = sh("docker", "ps", "-aq", "--filter", f"name=^a3sbx_{RUN}_", check=False).stdout.split()
+    ids += sh("docker", "ps", "-aq", "--filter", f"label=cs2680.run={RUN}", check=False).stdout.split()
     for c in ids + [AGENT, *PROXIES.values()]:
         sh("docker", "rm", "-f", c, check=False)
     for net in (NET, EGRESS):
         sh("docker", "network", "rm", net, check=False)
     drop_links()
+    # The agent's final shell copy may not run after interruption; publish the current trace.
+    shutil.rmtree("madsOpt_logs", ignore_errors=True)
+    if os.path.isdir(".tasks/trace/madsOpt_logs"):
+        shutil.copytree(".tasks/trace/madsOpt_logs", "madsOpt_logs")
 
 
 # --- sandboxes --------------------------------------------------------------------------
@@ -553,7 +561,7 @@ def start_grading(t: Task, n_done: Optional[int] = None):
             with src:
                 shutil.copyfileobj(src, out)
     outdir = f"{GRADINGS}/{t.key}"     # not under ROOT: the agent container mounts it, and reads it live
-    env = dict(os.environ, A3_EVAL_TIMEOUT=str(EVAL_TIMEOUT), SWEBENCH_PRO_OS=PRO_OS)   # the copy cannot find it relative to itself
+    env = dict(os.environ, A3_EVAL_TIMEOUT=str(EVAL_TIMEOUT), SWEBENCH_PRO_OS=PRO_OS, A3_RUN_ID=RUN)
     t.grading = subprocess.Popen(["bash", f"{SCRIPTS}/evaluate_one.sh", t.key, snap, outdir],
                                  stdout=subprocess.PIPE, stderr=open("run_logs/sequence.log", "a"), text=True, env=env)
     t.grading_attempt = t.attempt; t.grading_t0 = time.time(); t.queued = False
@@ -586,7 +594,7 @@ def finish_grading(t: Task):
     log(f"task {t.k} attempt {t.grading_attempt}: {failed}/{total} tests failing, "
         f"{'RESOLVED' if res else 'unresolved'} ({secs}s{', TIMEOUT' if timed_out else ''})")
     seq_json(f"evalres_{t.k}_{t.grading_attempt}.json",
-             {"task": t.k, "attempt": t.grading_attempt, "tests_failed": failed, "tests_total": total})
+             {"task": t.k, "attempt": t.grading_attempt, "tests_failed": failed, "tests_total": total, "resolved": bool(res)})
     t.grading = None
 
 
@@ -618,6 +626,7 @@ class Server:
         stop_sandbox(t)
         remove_patch_dir(t.k)
         t.live = False
+        t.finalized = True
         t.e2e_t1 = time.monotonic()
         with open("run_logs/task_times.tsv", "a") as f:
             f.write(f"{t.k}\t{t.iid}\t{t.t_start}\t{time.time()}\n")
@@ -662,6 +671,7 @@ class Server:
                 return self.respond(n, {"ok": True, "task": None})
             t = self.tasks[self.next_k]; self.next_k += 1
             t.e2e_t0 = time.monotonic()
+            t.end_reason = "running"
             log(f"task {t.k}: {t.key} — starting sandbox from {t.sandbox_image}")
             wd = start_sandbox(t)
             if not wd:
@@ -687,6 +697,9 @@ class Server:
                 return self.respond(n, {"ok": False, "error": f"no patch at .tasks/patches/{t.k}/patch.diff (call extract_patch or submit_patch first)"})
             if t.grading is not None or t.queued:
                 return self.respond(n, {"ok": False, "error": f"an evaluation of task {t.k} is already running"})
+            if t.evaluated:
+                return self.respond(n, {"ok": True, "tests_failed": t.last[1], "tests_total": t.last[2],
+                                        "resolved": bool(t.last[0]), "attempt": t.attempt})
             if self.grading_now() < MAX_GRADING:
                 start_grading(t)
             else:
@@ -704,6 +717,7 @@ class Server:
         if op == "done":
             if t.grading is not None or t.queued:
                 return self.respond(n, {"ok": False, "error": f"an evaluation of task {t.k} is still running; wait for evaluate() to return"})
+            t.end_reason = str(req.get("reason", "done"))
             if patch_size(t.k) > 0 and not t.evaluated:
                 start_grading(t, n_done=n)             # answer deferred to pump_gradings()
                 return
@@ -716,6 +730,7 @@ class Server:
         while True:
             self.pump_gradings()
             if self.over_time():
+                sh("docker", "stop", "-t", "5", AGENT, check=False)
                 break
             if exists_at(SEQ_FD, "end"):
                 break
@@ -736,6 +751,7 @@ class Server:
         while any(t.grading is not None for t in self.tasks) or self.grade_queue:
             self.pump_gradings(); time.sleep(1)
         for t in self.live():
+            t.end_reason = "time_limit" if self.limit_note else "agent_exit"
             log(f"task {t.k}: still live at the end — finalizing")
             if patch_size(t.k) > 0 and not t.evaluated:
                 start_grading(t); t.grading.wait(); finish_grading(t)
@@ -839,7 +855,7 @@ def write_results(tasks, note: str = ""):
     def number(value, digits=3):
         return "unknown" if value is None else f"{value:.{digits}f}"
     totals = metrics["totals"]
-    rows = [f"| {t.key} | {'PASS' if res[t.key] else 'FAIL'} | {t.last[1] if t.last else '-'}/{t.last[2] if t.last else '-'} | "
+    rows = [f"| {t.key} | {'PASS' if res[t.key] else 'FAIL'} | {m['end_reason']} | {t.last[1] if t.last else '-'}/{t.last[2] if t.last else '-'} | "
             f"{m['evaluations']} | {m['failed_evaluations']} | {m['rework_count']} | {number(m['e2e_seconds'])} | "
             f"{m['prompt_tokens']} / {m['cached_prompt_tokens']} / {m['completion_tokens']} | {number(m['cost_usd'], 8)} |"
             for t, m in zip(tasks, metrics["tasks"])]
@@ -847,10 +863,11 @@ def write_results(tasks, note: str = ""):
         ["# Evaluation results", "", f"{passed}/{len(tasks)} passed", "", *([note, ""] if note else []),
          f"E2E: {number(totals['e2e_seconds'])} s; reworks: {totals['rework_count']}; "
          f"token cost: {number(totals['cost_usd'], 8)} USD; reported tokens: {totals['total_tokens']}.", "",
+         f"Known priced subtotal: {number(totals['known_cost_usd'], 8)} USD; API errors: {totals['api_errors']}; unfinished API requests: {totals['pending_api_requests']}.", "",
          "Costs use model-config.yaml prices (USD / 1M tokens). Cached input is included in prompt tokens.",
          "Unknown cost means incomplete usage, trace or pricing; tokens are observed subtotals. Details: run_logs/metrics.json.", "",
-         "| task | result | tests failing | evaluations | failed evaluations | reworks | E2E (s) | prompt / cached / completion tokens | cost (USD) |",
-         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |", *rows]) + "\n"
+         "| task | result | end reason | tests failing | evaluations | failed evaluations | reworks | E2E (s) | prompt / cached / completion tokens | cost (USD) |",
+         "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |", *rows]) + "\n"
     with open("run_all_results.md", "w") as f:
         f.write(report)
     log(f"wrote run_all_results.md ({passed}/{len(tasks)} passed); host-only records in {HOSTLOG}")
@@ -918,16 +935,31 @@ def main() -> int:
     except KeyboardInterrupt:
         interrupted = True
         log("interrupted: stopping the agent and removing its containers and networks (please wait)")
+    except Exception as error:
+        rc = 1
+        log(f"runner failed: {type(error).__name__}: {error}")
     finally:
         for s in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
             signal.signal(s, signal.SIG_IGN)
         cleanup()
+        for t in tasks:
+            if t.grading is not None:
+                t.grading.terminate()
+                try:
+                    t.grading.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    t.grading.kill(); t.grading.wait()
+            if t.e2e_t0 is not None and t.e2e_t1 is None:
+                t.e2e_t1 = time.monotonic()
+                t.end_reason = "interrupted" if interrupted else "runner_error"
         move_gradings()     # only now: the agent container, which mounts this folder, is gone
     if interrupted:
-        log("stopped: containers and networks removed; no results written")
+        if server is not None:
+            write_results(tasks, "Interrupted: partial results and observed usage only; active tasks were not finalized.")
+        log("stopped: containers and networks removed; partial results preserved")
         return 130
-    if n_available > 0:
-        write_results(tasks, server.limit_note if server else "")
+    if n_available > 0 and server is not None:
+        write_results(tasks, server.limit_note or ("Runner failed; partial results only." if rc else ""))
     return rc
 
 

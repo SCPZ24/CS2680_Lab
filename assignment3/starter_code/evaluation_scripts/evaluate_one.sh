@@ -41,13 +41,13 @@ echo "apply_rc=$?" >> /logs/verifier/apply.log
 git status --short > /logs/verifier/post_apply_status.txt 2>&1 || true
 bash /tests/test.sh
 chown -R '"$(id -u):$(id -g)"' /logs/verifier 2>/dev/null || true'
-# On timeout: `timeout` TERMs the docker client, which only forwards the signal into the
+# On timeout: run_with_timeout.py TERMs the docker client, which only forwards the signal into the
 # container and keeps waiting (the container's shell defers it until the test process ends),
-# so `-k 5` KILLs the client 5 s later and the container is then removed by name.
+# so the helper KILLs the client 5 s later and the container is then removed by name.
 read -r -a DOCKER <<< "${A3_DOCKER:-docker}"   # run_all.py sets it (e.g. "sudo -n -E docker")
 CNAME="a3grade_$$_$(date +%s%N)"
 rc=0
-timeout -k 5 "${A3_EVAL_TIMEOUT:-3300}" "${DOCKER[@]}" run --rm --name "$CNAME" --network none --entrypoint bash \
+python3 "$SCRIPT_DIR/run_with_timeout.py" "${A3_EVAL_TIMEOUT:-3300}" "${DOCKER[@]}" run --rm --name "$CNAME" --label "cs2680.run=${A3_RUN_ID:-standalone}" --network none --entrypoint bash \
   -v "$TDIR:/tests:ro" -v "$OUT/replay:/replay:ro" -v "$OUT:/logs/verifier" \
   "$IMAGE" -c "$INNER" > "$OUT/verifier_stdout.txt" 2>&1 || rc=$?
 if [[ $rc == 124 || $rc == 137 ]]; then

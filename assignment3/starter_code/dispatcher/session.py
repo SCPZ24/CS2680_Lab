@@ -6,11 +6,11 @@ X-Session-Id header and tags the User-Agent with "cs2680-session/<id>" on every 
 forwards. The agent container never sees it and cannot change it.
 
   - your runs:  <First>_<Last>_<UTC time the run started>, e.g. Jane_Doe_20261006T172408Z, from
-                dispatcher/student_name.json (asked for once, in a terminal, and saved there)
+                dispatcher/student_name.json; local_<UTC time> if no name is configured
   - gradings:   the grader's A3_SESSION_ID, sub_<submission>_<UTC time>[_c<copy>]
 
 Names are kept to Latin letters, digits and "-" (José -> Jose, "Mary Ann" -> Mary-Ann,
-O'Neil -> ONeil); a name with no Latin letters at all is asked for again, romanized.
+O'Neil -> ONeil); an unusable name falls back to the local timestamp id.
 Stdlib only; run_all.py loads it before it starts anything.
 """
 
@@ -42,31 +42,9 @@ def _read():
         return "", ""
 
 
-def _ask():
-    print("run_all.py needs your name once; it is saved in dispatcher/student_name.json, and every\n"
-          "run then sends <First>_<Last>_<time> as the session id of its course API requests.",
-          file=sys.stderr)
-    out = []
-    for what in ("First name", "Last name"):
-        v = ""
-        while not v:
-            try:
-                v = clean_name(input(f"{what} (Latin letters): "))
-            except EOFError:
-                sys.exit("\nno name given: fill in dispatcher/student_name.json")
-            if not v:
-                print("  please type it in Latin letters (e.g. as on your Harvard ID)", file=sys.stderr)
-        out.append(v)
-    with open(NAME_FILE, "w") as f:
-        json.dump({"first_name": out[0], "last_name": out[1]}, f, indent=2)
-        f.write("\n")
-    print(f"saved in {NAME_FILE}", file=sys.stderr)
-    return out[0], out[1]
-
-
 def session_id(now=None) -> str:
     """The grader's A3_SESSION_ID, else <First>_<Last>_<UTC now>. Exits (before anything has
-    started) when there is no name and no terminal to ask in."""
+    started) when an invalid grader session id is supplied. Unnamed runs use local_<UTC>."""
     sid = os.environ.get("A3_SESSION_ID", "").strip()
     if sid:
         if not GRADER_SESSION.fullmatch(sid):
@@ -75,9 +53,5 @@ def session_id(now=None) -> str:
         return sid
     first, last = _read()
     if not (first and last):
-        if sys.stdin.isatty():
-            first, last = _ask()
-        else:
-            sys.exit(f"no name in {NAME_FILE}: fill in first_name and last_name (Latin letters), "
-                     "or run evaluation_scripts/run_all.py once in a terminal to be asked")
+        return f"local_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime(now))}"
     return f"{first}_{last}_{time.strftime('%Y%m%dT%H%M%SZ', time.gmtime(now))}"

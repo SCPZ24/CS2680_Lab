@@ -15,9 +15,9 @@ def summarize_usage(path, models, *, opened=True):
     result = dict(api_requests=0, prompt_tokens=0, cached_prompt_tokens=0,
                   completion_tokens=0, total_tokens=0, missing_usage_requests=0,
                   unpriced_requests=0, trace_errors=0, trace_complete=not opened,
-                  known_cost_usd=0.0)
+                  api_starts=0, api_errors=0, pending_api_requests=0, known_cost_usd=0.0)
     try:
-        trace = Path(path).open(encoding="utf-8")
+        trace = Path(path).open(encoding="utf-8", errors="replace")
     except FileNotFoundError:
         trace = ()
     try:
@@ -31,6 +31,10 @@ def summarize_usage(path, models, *, opened=True):
                 continue
             if event.get("event") == "run_end":
                 result["trace_complete"] = True
+            if event.get("event") == "api_start":
+                result["api_starts"] += 1
+            if event.get("event") == "api_error":
+                result["api_errors"] += 1
             if event.get("event") != "api_request":
                 continue
             result["api_requests"] += 1
@@ -61,8 +65,10 @@ def summarize_usage(path, models, *, opened=True):
     finally:
         if hasattr(trace, "close"):
             trace.close()
+    result["pending_api_requests"] = max(0, result["api_starts"] - result["api_requests"] - result["api_errors"])
     result["usage_complete"] = (result["trace_complete"] and not result["trace_errors"]
-                                and not result["missing_usage_requests"])
+                                and not result["missing_usage_requests"] and not result["api_errors"]
+                                and not result["pending_api_requests"])
     result["cost_complete"] = result["usage_complete"] and not result["unpriced_requests"]
     result["cost_usd"] = result["known_cost_usd"] if result["cost_complete"] else None
     return result
@@ -74,7 +80,7 @@ def collect_metrics(tasks, models, trace_root):
         usage = summarize_usage(Path(trace_root) / str(task.k) / "run.jsonl", models,
                                 opened=task.e2e_t0 is not None)
         rows.append(dict(task=task.k, key=task.key, opened=task.e2e_t0 is not None,
-                         finished=task.e2e_t1 is not None,
+                         finished=task.finalized, end_reason=task.end_reason,
                          resolved=bool(task.last and task.last[0]),
                          evaluations=task.evaluations, failed_evaluations=task.failed_evaluations,
                          rework_count=task.rework_count,
@@ -85,7 +91,7 @@ def collect_metrics(tasks, models, trace_root):
     total = {key: sum(row[key] for row in rows) for key in (
         "evaluations", "failed_evaluations", "rework_count", "api_requests", "prompt_tokens",
         "cached_prompt_tokens", "completion_tokens", "total_tokens", "missing_usage_requests",
-        "unpriced_requests", "trace_errors", "known_cost_usd")}
+        "unpriced_requests", "trace_errors", "known_cost_usd", "api_starts", "api_errors", "pending_api_requests")}
     total["e2e_seconds"] = max(ended) - min(started) if started and len(started) == len(ended) else None
     total["usage_complete"] = all(row["usage_complete"] for row in rows)
     total["cost_complete"] = all(row["cost_complete"] for row in rows)

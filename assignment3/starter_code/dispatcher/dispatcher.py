@@ -103,15 +103,19 @@ class Dispatcher:
         if resp.get("pending"):
             resp = self._wait_for(os.path.join(SEQ_DIR, f"evalres_{int(k)}_{resp['attempt']}.json"))
         ev = {"tests_failed": resp["tests_failed"], "tests_total": resp["tests_total"], "attempt": resp["attempt"]}
+        ev["resolved"] = resp.get("resolved", ev["tests_total"] > 0 and ev["tests_failed"] == 0)
+        self.logger(k).event("evaluation", **ev)
         _log(f"task #{k} attempt {ev['attempt']}: {ev['tests_failed']}/{ev['tests_total']} tests failing")
         return ev
 
     def continue_task(self, k: int):
-        self._request("continue", k=int(k))
+        resp = self._request("continue", k=int(k))
+        self.logger(k).event("rework", attempt=resp["attempt"])
         _log(f"task #{k}: continuing")
 
     def done(self, k: int, reason: str = "done", iterations=None) -> dict:
-        resp = self._request("done", k=int(k))
+        self.logger(k).event("task_exit", reason=reason, num_iterations=int(iterations or 0))
+        resp = self._request("done", k=int(k), reason=reason)
         self.logger(k).run_end(reason, int(iterations or 0))
         self.logger(k).close()
         _log(f"task #{k} done ({reason}); final {resp.get('tests_failed')}/{resp.get('tests_total')} tests failing")

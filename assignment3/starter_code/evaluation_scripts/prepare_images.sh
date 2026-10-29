@@ -113,13 +113,13 @@ fi
 while read -r iid image; do
   have "$image" && continue
   if [[ -f "$ASSETS/images/$iid.tar" ]]; then log "loading $image"; docker load -q -i "$ASSETS/images/$iid.tar" >/dev/null
-  else log "pulling $image"; docker pull -q "$image" >/dev/null; fi
+  else log "pulling $image"; docker pull --platform linux/amd64 -q "$image" >/dev/null; fi
 done < <(python3 -c "import json,sys; [print(t['instance_id'], t['docker_image']) for t in json.load(open(sys.argv[1])).values()]" "$TASKS")
 
 # --- 4. agent image ----------------------------------------------------------------
 if ! have "$AGENT_IMAGE"; then
   log "building $AGENT_IMAGE (dispatcher/agent.Dockerfile, offline from $ASSETS/wheels)"
-  docker build -q -f dispatcher/agent.Dockerfile -t "$AGENT_IMAGE" "$ASSETS" >/dev/null
+  docker build --platform linux/amd64 -q -f dispatcher/agent.Dockerfile -t "$AGENT_IMAGE" "$ASSETS" >/dev/null
 fi
 
 # --- 5. pre-warmed sandbox images ---------------------------------------------------
@@ -182,7 +182,7 @@ RUN --mount=type=bind,source=.,target=/ctx,readonly set -e; \\
 DOCKEREOF
   # keep only the RUN's own messages: step headers (BuildKit `#N [...]`, legacy `Step N/M :`) echo the
   # whole command, which itself contains every word matched below
-  docker build -t "$tag" "$b" 2>&1 | grep -vE '^(#[0-9]+ \[|Step [0-9]+/)' \
+  docker build --platform linux/amd64 -t "$tag" "$b" 2>&1 | grep -vE '^(#[0-9]+ \[|Step [0-9]+/)' \
     | grep -E "warning|blend:|fix applied|own-module|modified|ERROR|error" >&2 || true
   have "$tag" || { echo "error: build of $tag failed" >&2; rm -rf "$b"; return 1; }
   rm -rf "$b"

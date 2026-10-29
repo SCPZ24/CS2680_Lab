@@ -9,6 +9,28 @@ from src.agentic_loop import Agent
 
 
 class HarnessTests(unittest.TestCase):
+    def test_base_executes_declared_tools_and_refuses_unimplemented_tools(self):
+        sandbox, logger = Mock(), Mock()
+        harness = Harness({}, {}, logger, sandbox)
+        harness.tools = [{"type": "function", "function": {
+            "name": "read_text", "parameters": {"type": "object", "properties": {
+                "path": {"type": "string"}}, "required": ["path"]}}}]
+        sandbox.read_text.return_value = "contents"
+        tool = SimpleNamespace(id="read-1", function=SimpleNamespace(
+            name="read_text", arguments='{"path":"a.py"}'))
+        harness._execute_tool(tool, 2)
+        sandbox.read_text.assert_called_once_with(path="a.py")
+        self.assertEqual(harness.messages[-1], {
+            "role": "tool", "tool_call_id": "read-1", "content": '{"content": "contents"}'})
+        logger.tool_result.assert_called_once_with(2, "read_text", '{"content": "contents"}', False)
+        # A newly declared tool must not accidentally fall through to write_text.
+        harness.tools[0]["function"]["name"] = "new_tool"
+        tool.function.name = "new_tool"
+        harness._execute_tool(tool, 3)
+        self.assertTrue(logger.tool_result.call_args.args[3])
+        sandbox.write_text.assert_not_called()
+        self.assertEqual(Harness({}, {}, Mock(), sandbox).messages, [])
+
     def test_tier_routing_tools_and_task_logger(self):
         models = {tier: {"model_name": tier + "-model"} for tier in ("expert", "starter")}
         clients = {tier: Mock() for tier in models}
@@ -62,7 +84,7 @@ class HarnessTests(unittest.TestCase):
             harness.assert_called_once_with(
                 agent.models, agent.clients, agent.dispatcher.logger.return_value, sandbox.return_value)
             harness.return_value.run.assert_called_once_with(task)
-            agent.dispatcher.done.assert_called_once_with(0, "done", 3)
+            agent.dispatcher.done.assert_called_once_with(0, "no_patch", 3)
         with self.assertRaises(NotImplementedError):
             Harness({}, {}, Mock(), Mock()).run(task)
 

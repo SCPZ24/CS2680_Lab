@@ -19,7 +19,7 @@ import os
 def _now_iso() -> str:
     return (
         datetime.datetime.now(datetime.timezone.utc)
-        .isoformat(timespec="seconds")
+        .isoformat(timespec="milliseconds")
     )
 
 
@@ -44,6 +44,9 @@ class TraceLogger:
         self._fh.write(json.dumps(line, ensure_ascii=False, default=str) + "\n")
 
     # -- one method per graded event type ---------------------------------
+
+    def event(self, event: str, **fields):
+        self._emit(event, fields)
 
     def run_start(self, workdir: str):
         self._emit("run_start", {"workdir": workdir})

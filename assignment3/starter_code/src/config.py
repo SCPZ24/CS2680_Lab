@@ -65,6 +65,10 @@ def _model_configs(data) -> dict:
                     or not math.isfinite(value) or value < 0):
                 raise ValueError(f"{tier}.{field} must be a finite non-negative USD price per million tokens")
             model[field] = value
+        if "api_format" in entry:
+            if entry["api_format"] not in ("chat_completions", "messages"):
+                raise ValueError(f"{tier}.api_format must be chat_completions or messages")
+            model["api_format"] = entry["api_format"]
         models[tier] = model
     return models
 

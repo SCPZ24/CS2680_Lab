@@ -1,11 +1,9 @@
 """A synchronous ReAct loop with three Sandbox-backed tools."""
 
-import json
 import os
 
 from .harness import Harness
 from .prompts import REACT_RAW_SYSTEM_PROMPT
-from ..sandbox import SandboxError, SandboxPathError
 
 
 class ReActBase3ToolHarness(Harness):
@@ -40,41 +38,6 @@ class ReActBase3ToolHarness(Harness):
     def _build_initial_messages(self) -> list:
         return [{"role": "system", "content": REACT_RAW_SYSTEM_PROMPT}]
 
-    def _execute_tool(self, call, iteration):
-        name, raw_args = call.function.name, call.function.arguments
-        self.logger.tool_call(iteration, name, raw_args)
-        try:
-            schema = next((t["function"]["parameters"] for t in self.tools
-                           if t["function"]["name"] == name), None)
-            if schema is None:
-                raise ValueError(f"Unknown tool: {name}")
-            args = json.loads(raw_args)
-            if not isinstance(args, dict):
-                raise ValueError("Tool arguments must be a JSON object")
-            if set(args) - schema["properties"].keys() or set(schema["required"]) - args.keys():
-                raise ValueError("Missing required or unexpected tool arguments")
-            for key, value in args.items():
-                spec = schema["properties"][key]
-                expected = int if spec["type"] == "integer" else str
-                if type(value) is not expected:
-                    raise ValueError(f"Invalid type for {key}: expected {spec['type']}")
-                if expected is int and not spec["minimum"] <= value <= spec["maximum"]:
-                    raise ValueError(f"{key} must be between {spec['minimum']} and {spec['maximum']}")
-            if name == "exec":
-                result = self.sandbox.exec(**args)
-                is_error = result["exit_code"] != 0 or result["timed_out"]
-            elif name == "read_text":
-                result = {"content": self.sandbox.read_text(**args)}
-                is_error = False
-            else:  # write_text; only the three declared tool names are accepted above.
-                result = {"existed": self.sandbox.write_text(**args)}
-                is_error = False
-        except (ValueError, TypeError, SandboxError, SandboxPathError) as error:
-            result, is_error = {"error": str(error)}, True
-        content = json.dumps(result, ensure_ascii=False)
-        self.logger.tool_result(iteration, name, content, is_error)
-        self.messages.append({"role": "tool", "tool_call_id": call.id, "content": content})
-
     def run(self, task: dict) -> int:
         """Return model-call count on final text, or -1 on an incomplete response/budget stop.
 
@@ -87,6 +50,15 @@ class ReActBase3ToolHarness(Harness):
         description = "\n\n".join(f"{key}:\n{task[key]}" for key in
                                     ("problem_statement", "requirements", "interface") if task.get(key))
         self.messages.append({"role": "user", "content": description})
+        return self._loop()
+
+    def resume(self, feedback: str) -> int:
+        """Rework the same task without resetting history or its total call budget."""
+        self.final_answer = self.stop_reason = None
+        self.messages.append({"role": "user", "content": feedback})
+        return self._loop()
+
+    def _loop(self) -> int:
         while self.iteration < self.max_iterations:
             response = self._call_model("expert", self.messages, self.iteration, tools=self.tools)
             self.iteration += 1
@@ -108,6 +80,7 @@ class ReActBase3ToolHarness(Harness):
             if choice.finish_reason == "stop" and message.content and message.content.strip():
                 self.final_answer = message.content
                 self.stop_reason = "final"
+                self.logger.event("final_answer", iteration=self.iteration - 1, content=message.content)
                 return self.iteration
             self.stop_reason = "empty_response"
             return -1

@@ -77,7 +77,7 @@ extra: [ignored, even, when, invalid]
             agent = Agent(Mock())
             self.assertEqual(agent.models, models)
             self.assertEqual(list(agent.clients), ["starter"])
-            sdk.OpenAI.assert_called_once_with(base_url="http://proxy:3128/v1", api_key="test")
+            sdk.OpenAI.assert_called_once_with(base_url="http://proxy:3128/v1", api_key="test", max_retries=0, timeout=120)
         with patch.dict(os.environ, {MODEL_CONFIG_ENV: "{}"}), patch.dict(sys.modules, {"openai": sdk}):
             self.assertEqual(Agent(Mock()).clients, {})
 

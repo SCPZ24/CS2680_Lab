@@ -56,13 +56,14 @@ class MetricsTests(unittest.TestCase):
             models = {"starter": {k: v for k, v in MODEL.items() if k != "cache"}}
             self.assertIsNone(summarize_usage(path, models)["cost_usd"])
             events = [json.loads(line) for line in path.read_text().splitlines()]
-            events[1]["cached_prompt_tokens"] = 0
+            request = next(e for e in events if e["event"] == "api_request")
+            request["cached_prompt_tokens"] = 0
             path.write_text("\n".join(map(json.dumps, events)))
             self.assertAlmostEqual(summarize_usage(path, models)["cost_usd"], 0.0028)
-            events[1]["model_tier"] = None
+            request["model_tier"] = None
             path.write_text("\n".join(map(json.dumps, events)))
             self.assertIsNone(summarize_usage(path, {"starter": MODEL, "expert": MODEL})["cost_usd"])
-            events[1]["prompt_tokens"] = None
+            request["prompt_tokens"] = None
             path.write_text("\n".join(map(json.dumps, events)))
             result = summarize_usage(path, {"starter": MODEL})
             self.assertEqual(result["missing_usage_requests"], 1)
