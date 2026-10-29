@@ -21,29 +21,12 @@ write your agent:
 import sys
 
 from .config import load_model_config
+from .runtime.harness import Harness
 from .sandbox import Sandbox
 
 
 def _debug(msg: str):
     print(f"[madsOpt] {msg}", file=sys.stderr, flush=True)
-
-
-def call_model(client, model_id: str, messages: list, logger, iteration: int, *, model_tier=None, **kwargs):
-    """One chat-completions request to the selected model, logged in the task's trace.
-
-    `messages` is an OpenAI-style message list; extra keyword arguments (e.g. tools=[...]) are
-    passed to the API unchanged. Nothing else is done for you here.
-    """
-    response = client.chat.completions.create(model=model_id, messages=messages, **kwargs)
-    usage = response.usage
-    logger.api_request(iteration,
-                       getattr(usage, "prompt_tokens", None),
-                       getattr(usage, "completion_tokens", None),
-                       getattr(usage, "total_tokens", None),
-                       model_id,
-                       cached_prompt_tokens=getattr(getattr(usage, "prompt_tokens_details", None), "cached_tokens", 0) or 0,
-                       model_tier=model_tier)
-    return response
 
 
 class Agent:
@@ -79,19 +62,10 @@ class Agent:
         k = task["task"]                                  # the task index
         logger = self.dispatcher.logger(k)                # this task's trace: madsOpt_logs/<k>/run.jsonl
         sb = Sandbox(task["sandbox_url"], task["workdir"])  # this task's repository
+        harness = Harness(self.models, self.clients, logger, sb)  # Replace with a concrete loop when implemented.
         # What to fix: task["problem_statement"], task["requirements"], task["interface"].
-        iterations = 0
-        messages = []  # Task-local conversation; keep it across rework, never across tasks.
 
-        # ---- your agent's work on the task goes here -----------------------------------------
-        # Ask a configured tier, e.g. if "standard" in self.models:
-        # response = call_model(self.clients["standard"], self.models["standard"]["model_name"],
-        #                       messages, logger, iterations, model_tier="standard")
-        # Repository:     r = sb.exec("git status --short", timeout_s=60)  # {"output", "exit_code", "timed_out"}
-        #                 text = sb.read_text("path/to/file.py");  sb.write_text("path/to/file.py", text)
-        # Log tool use:   logger.tool_call(iterations, name, args)
-        #                 logger.tool_result(iterations, name, result, is_error)
-        # ---------------------------------------------------------------------------------------
+        iterations = harness.run(task)  # Conversation and tool execution belong to the runtime.
 
         size = self.dispatcher.extract_patch(k)           # `git diff` of the sandbox -> the task's patch folder
         # (or self.dispatcher.submit_patch(k, text) to write a patch yourself)

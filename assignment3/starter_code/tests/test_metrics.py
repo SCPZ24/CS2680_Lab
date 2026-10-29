@@ -13,7 +13,8 @@ from unittest.mock import Mock, patch
 from test_model_config import import_runner
 from dispatcher.dispatcher import TaskTraceLogger
 from evaluation_scripts.metrics import summarize_usage
-from src.agentic_loop import Agent, call_model
+from src.agentic_loop import Agent
+from src.runtime.harness import Harness
 from src.config import load_model_config
 
 
@@ -43,7 +44,8 @@ class MetricsTests(unittest.TestCase):
             client.chat.completions.create.return_value = SimpleNamespace(usage=SimpleNamespace(
                 prompt_tokens=1000, completion_tokens=100, total_tokens=1100,
                 prompt_tokens_details=SimpleNamespace(cached_tokens=400)))
-            call_model(client, MODEL["model_name"], [], logger, 1, model_tier="starter")
+            harness = Harness({"starter": MODEL}, {"starter": client}, logger, Mock())
+            harness._call_model("starter", [], 1)
             logger.run_end("done", 1)
             logger.close()
             result = summarize_usage(path, {"starter": MODEL})

@@ -37,8 +37,8 @@
 
 `prompt_tokens` 已包含缓存命中 token，`completion_tokens` 按上游返回值使用，推理 token 不重复累加。
 如果上游未返回 `prompt_tokens_details.cached_tokens`，按没有报告缓存命中处理，即 0。
-模型调用必须经过 `call_model(..., model_tier="standard")` 或写入等价的 `logger.api_request()` 事件。
-传入 model_tier 可以区分“同一模型名称、不同档位/上游价格”；省略时只有模型名称唯一匹配才计价。
+模型调用必须经过 `Harness._call_model("standard", messages, iteration, tools=tool_schemas)` 或写入等价的 `logger.api_request()` 事件。
+Harness 自动记录 model_tier，以区分“同一模型名称、不同档位/上游价格”；手动写日志省略该字段时，只有模型名称唯一匹配才计价。
 
 缺少 usage、必要单价、唯一的模型匹配，或日志不完整时，`cost_usd` 为 null，Markdown 显示 unknown。
 `known_cost_usd` 保留可完整计价请求的小计，token 字段保留有效 usage 的小计；`usage_complete` 和 `cost_complete` 表示能否作为完整统计使用。
