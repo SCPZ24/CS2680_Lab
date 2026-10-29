@@ -2,7 +2,7 @@
 # Leave a price blank for unknown; use 0 only when explicitly free.
 expert:
   base_url:
-  model_name:
+  model_name: gpt-6.1-sol
   api_key:
   input:
   cache:
@@ -10,7 +10,7 @@ expert:
 
 standard:
   base_url:
-  model_name:
+  model_name: gpt-5.6-terra
   api_key:
   input:
   cache:
@@ -18,7 +18,7 @@ standard:
 
 starter:
   base_url:
-  model_name:
+  model_name: gpt-5.6-luna
   api_key:
   input:
   cache:

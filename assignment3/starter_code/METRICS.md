@@ -2,8 +2,9 @@
 
 运行 `python3 evaluation_scripts/run_all.py --limit 1` 测试第一道题；省略 `--limit` 顺序运行全部任务。
 当前 dispatcher 固定最多一个在飞任务，`A3_MAX_LIVE` 不再生效。当前任务完成（包括返工、评测和清理）后才能领取下一题。
-`Agent.solve()` 的 `messages` 是任务局部变量；同一道题返工可保留历史，切换题目必须新建历史。模型 HTTP 客户端可以复用，它不保存对话消息。
-目前 `solve()` 仍是课程提供的空骨架，尚未实现实际解题循环。
+`Agent.solve()` 为每道题创建独立的 ReActBase3ToolHarness；对话历史保存在该 Harness 中，每次 run(task) 都重建。模型 HTTP 客户端可以复用，它不保存对话消息。
+当前使用 expert 档位，通过 exec/read_text/write_text 三个工具解题；无工具调用的正常最终文本结束循环。MADSOPT_MAX_ITERATIONS 默认 100，限制单题模型调用次数。达到上限或收到不完整响应时保留实际调用计数并记录停止原因。
+solve() 在循环结束后提取补丁、评测并关闭任务，尚未实现评测失败后的自动返工策略。
 
 ## 输出
 

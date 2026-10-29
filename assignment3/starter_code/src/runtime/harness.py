@@ -50,6 +50,7 @@ class Harness:
         """
         The whole sync agent loop for a complete task.
 
-        return the number of iterations to solve the task, or -1 if the loop failed to solve it.
+        Return the model-call count on normal completion, or -1 if the loop stops
+        incomplete. Completion does not imply passing the dispatcher's evaluation.
         """
         raise NotImplementedError("Implement the agent loop in a Harness subclass")

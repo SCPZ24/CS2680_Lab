@@ -4,9 +4,7 @@ madsOpt.py (course code) builds the dispatcher client and calls
 
     Agent(dispatcher).run()
 
-That is all it needs from src/. This starter only shows how to use
-what the course provides. It makes no attempt to fix anything, so every task fails until you
-write your agent:
+That is all it needs from src/. Tasks run serially using the three-tool ReAct harness:
 
 - the dispatcher (dispatcher/dispatcher.py) opens tasks and grades patches: Agent.run() and
   Agent.solve() below show every call;
@@ -21,7 +19,7 @@ write your agent:
 import sys
 
 from .config import load_model_config
-from .runtime.harness import Harness
+from .runtime.react_base3tool import ReActBase3ToolHarness
 from .sandbox import Sandbox
 
 
@@ -62,7 +60,7 @@ class Agent:
         k = task["task"]                                  # the task index
         logger = self.dispatcher.logger(k)                # this task's trace: madsOpt_logs/<k>/run.jsonl
         sb = Sandbox(task["sandbox_url"], task["workdir"])  # this task's repository
-        harness = Harness(self.models, self.clients, logger, sb)  # Replace with a concrete loop when implemented.
+        harness = ReActBase3ToolHarness(self.models, self.clients, logger, sb)
         # What to fix: task["problem_statement"], task["requirements"], task["interface"].
 
         iterations = harness.run(task)  # Conversation and tool execution belong to the runtime.
@@ -74,4 +72,5 @@ class Agent:
             _debug(f"task {k}: {evaluation['tests_failed']}/{evaluation['tests_total']} tests failing")
             # To keep working after reading the evaluation: self.dispatcher.continue_task(k)
             # (your edits stay in the sandbox), then extract_patch(k) and evaluate(k) again.
-        self.dispatcher.done(k, "done", iterations)       # final: the last evaluation is the task's result
+        reason = harness.stop_reason if iterations < 0 else "done"
+        self.dispatcher.done(k, reason, harness.iteration)  # final: the last evaluation is the task's result

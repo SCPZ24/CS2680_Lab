@@ -55,8 +55,9 @@ class HarnessTests(unittest.TestCase):
         agent.dispatcher.extract_patch.return_value = 0
         task = {"task": 0, "sandbox_url": "http://sandbox", "workdir": "/app"}
         with patch("src.agentic_loop.Sandbox") as sandbox, \
-             patch("src.agentic_loop.Harness") as harness:
+             patch("src.agentic_loop.ReActBase3ToolHarness") as harness:
             harness.return_value.run.return_value = 3
+            harness.return_value.iteration = 3
             agent.solve(task)
             harness.assert_called_once_with(
                 agent.models, agent.clients, agent.dispatcher.logger.return_value, sandbox.return_value)
