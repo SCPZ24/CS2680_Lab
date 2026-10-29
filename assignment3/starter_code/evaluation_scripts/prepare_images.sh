@@ -182,7 +182,8 @@ RUN --mount=type=bind,source=.,target=/ctx,readonly set -e; \\
 DOCKEREOF
   # keep only the RUN's own messages: step headers (BuildKit `#N [...]`, legacy `Step N/M :`) echo the
   # whole command, which itself contains every word matched below
-  docker build --platform linux/amd64 -t "$tag" "$b" 2>&1 | grep -vE '^(#[0-9]+ \[|Step [0-9]+/)' \
+  docker build --platform linux/amd64 --build-arg HTTP_PROXY="${A3_BUILD_PROXY:-${HTTP_PROXY:-}}" \
+    --build-arg HTTPS_PROXY="${A3_BUILD_PROXY:-${HTTPS_PROXY:-}}" -t "$tag" "$b" 2>&1 | grep -vE '^(#[0-9]+ \[|Step [0-9]+/)' \
     | grep -E "warning|blend:|fix applied|own-module|modified|ERROR|error" >&2 || true
   have "$tag" || { echo "error: build of $tag failed" >&2; rm -rf "$b"; return 1; }
   rm -rf "$b"
